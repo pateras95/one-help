@@ -1,0 +1,33 @@
+:root {
+  --oh-font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+  --oh-radius-sm: 4px;
+  --oh-radius-md: 8px;
+  --oh-radius-lg: 16px;
+  --oh-space-xs: 4px;
+  --oh-space-sm: 8px;
+  --oh-space-md: 16px;
+  --oh-space-lg: 24px;
+  --oh-space-xl: 32px;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--oh-font-family);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 2px;
+}
