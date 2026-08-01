@@ -4,6 +4,8 @@ import elHome from './el/home'
 import elFooter from './el/footer'
 import elErrors from './el/errors'
 import elPages from './el/pages'
+import elCategories from './el/categories'
+import elActions from './el/actions'
 
 import enCommon from './en/common'
 import enNavigation from './en/navigation'
@@ -11,6 +13,8 @@ import enHome from './en/home'
 import enFooter from './en/footer'
 import enErrors from './en/errors'
 import enPages from './en/pages'
+import enCategories from './en/categories'
+import enActions from './en/actions'
 
 export const messages = {
   el: {
@@ -19,7 +23,9 @@ export const messages = {
     home: elHome,
     footer: elFooter,
     errors: elErrors,
-    pages: elPages
+    pages: elPages,
+    categories: elCategories,
+    actions: elActions
   },
   en: {
     common: enCommon,
@@ -27,6 +33,8 @@ export const messages = {
     home: enHome,
     footer: enFooter,
     errors: enErrors,
-    pages: enPages
+    pages: enPages,
+    categories: enCategories,
+    actions: enActions
   }
 }

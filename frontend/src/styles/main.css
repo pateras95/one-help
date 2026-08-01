@@ -28,6 +28,16 @@ body {
   font-family: var(--oh-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /*
+   * Full-bleed sections (see OHSection's `fullBleed` prop) use a
+   * `calc(50% - 50vw)` margin to break out of the page's constrained
+   * width. `100vw` includes the scrollbar's width on desktop browsers
+   * that reserve space for it, which would otherwise cause a few pixels
+   * of horizontal overflow whenever a vertical scrollbar is present.
+   * This is the standard mitigation for that specific, well-known
+   * interaction — not a general overflow bypass.
+   */
+  overflow-x: hidden;
 }
 
 * {

@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes'
+import { actionsRoutes } from '@/features/actions/routes'
 
 /**
  * Public routes, accessible without authentication. `titleKey` points at a
@@ -15,15 +16,7 @@ export const publicRoutes = [
       requiresAuth: false
     }
   },
-  {
-    path: ROUTES.ACTIONS,
-    name: 'actions',
-    component: () => import('@/views/ActionsView.vue'),
-    meta: {
-      titleKey: 'navigation.actions',
-      requiresAuth: false
-    }
-  },
+  ...actionsRoutes,
   {
     path: ROUTES.ABOUT,
     name: 'about',

@@ -8,3 +8,8 @@ export const ROUTES = {
   ABOUT: '/about',
   CONTACT: '/contact'
 }
+
+/** Builds the details path for a single action, e.g. `/actions/act-001`. */
+export function actionDetailsPath(actionId) {
+  return `${ROUTES.ACTIONS}/${actionId}`
+}

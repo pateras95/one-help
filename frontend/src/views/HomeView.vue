@@ -5,22 +5,19 @@ import OHSection from '@/components/common/OHSection.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import { ROUTES } from '@/constants/routes'
+import { ACTION_CATEGORIES } from '@/constants/actionCategories'
 
 const { t } = useI18n()
-
-const categories = [
-  { key: 'health', icon: 'mdi-heart-pulse' },
-  { key: 'environment', icon: 'mdi-leaf' },
-  { key: 'social', icon: 'mdi-hand-heart' },
-  { key: 'animals', icon: 'mdi-paw' },
-  { key: 'emergency', icon: 'mdi-alert-decagram-outline' }
-]
 
 const steps = [
   { key: 'step1', icon: 'mdi-magnify' },
   { key: 'step2', icon: 'mdi-account-check-outline' },
   { key: 'step3', icon: 'mdi-hand-heart-outline' }
 ]
+
+function categoryTarget(categoryId) {
+  return { path: ROUTES.ACTIONS, query: { category: categoryId } }
+}
 </script>
 
 <template>
@@ -75,28 +72,34 @@ const steps = [
       </VRow>
     </section>
 
-    <OHSection :title="t('home.categories.title')">
-      <VRow>
-        <VCol
-          v-for="category in categories"
-          :key="category.key"
-          cols="6"
-          sm="4"
-          md="2"
+    <OHSection
+      full-bleed
+      background="surfaceVariant"
+      :title="t('home.categories.title')"
+      :subtitle="t('home.categories.subtitle')"
+    >
+      <div class="oh-categories" role="list">
+        <RouterLink
+          v-for="category in ACTION_CATEGORIES"
+          :key="category.id"
+          :to="categoryTarget(category.id)"
+          class="oh-category-card"
+          role="listitem"
+          :aria-label="t('home.categories.viewActionsAriaLabel', { category: t(category.labelKey) })"
         >
-          <OHCard color="surfaceVariant" class="pa-4 h-100 oh-category-card">
-            <div class="oh-icon-chip bg-primary mb-3">
-              <VIcon :icon="category.icon" size="24" color="white" aria-hidden="true" />
+          <OHCard class="oh-category-card__inner pa-5 h-100">
+            <div class="oh-icon-chip oh-icon-chip--lg" :class="`bg-${category.accent}`">
+              <VIcon :icon="category.icon" size="32" color="white" aria-hidden="true" />
             </div>
-            <p class="text-body-2 font-weight-bold mb-1">
-              {{ t(`home.categories.${category.key}.label`) }}
+            <p class="oh-category-card__label font-weight-bold mt-4 mb-1">
+              {{ t(category.labelKey) }}
             </p>
-            <p class="text-caption text-textSecondary mb-0">
-              {{ t(`home.categories.${category.key}.description`) }}
+            <p class="text-body-2 text-textSecondary mb-0">
+              {{ t(category.descriptionKey) }}
             </p>
           </OHCard>
-        </VCol>
-      </VRow>
+        </RouterLink>
+      </div>
     </OHSection>
 
     <OHSection :title="t('home.howItWorks.title')">
@@ -158,10 +161,6 @@ const steps = [
   height: 64px;
 }
 
-.oh-category-card {
-  transition: transform 0.15s ease;
-}
-
 .oh-hero-illustration {
   position: relative;
   aspect-ratio: 1 / 1;
@@ -207,6 +206,74 @@ const steps = [
 .oh-hero-illustration__accent--c {
   bottom: 8%;
   right: 22%;
+}
+
+/*
+ * Mobile: horizontal snap-scroll, one prominent card at a time with a
+ * peek of the next (native affordance that more content is available).
+ * The scrollbar stays visible (thin, not hidden) for usability.
+ */
+.oh-categories {
+  display: flex;
+  overflow-x: auto;
+  gap: var(--oh-space-md);
+  padding-bottom: var(--oh-space-sm);
+  scroll-snap-type: x mandatory;
+  scrollbar-width: thin;
+}
+
+.oh-category-card {
+  text-decoration: none;
+  color: inherit;
+  scroll-snap-align: start;
+  flex: 0 0 78%;
+  max-width: 320px;
+  border-radius: var(--oh-radius-lg);
+  transition: transform 0.15s ease;
+}
+
+.oh-category-card:hover,
+.oh-category-card:focus-visible {
+  transform: translateY(-4px);
+}
+
+.oh-category-card__inner {
+  pointer-events: none;
+}
+
+.oh-category-card__label {
+  font-size: 1.125rem;
+}
+
+/*
+ * Desktop/tablet: an editorial bento grid — the first category (health)
+ * is featured larger, the remaining four fill the rest of an even 4x2
+ * cell grid. This intentionally matches the branding breakpoint config
+ * (768px, see src/config/branding.js) since plain CSS can't reference
+ * Vuetify's JS-level display thresholds directly.
+ */
+@media (min-width: 768px) {
+  .oh-categories {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-auto-rows: 190px;
+    overflow: visible;
+    padding-bottom: 0;
+  }
+
+  .oh-category-card {
+    flex: initial;
+    max-width: none;
+  }
+
+  .oh-category-card:nth-child(1) {
+    grid-column: span 2;
+    grid-row: span 2;
+  }
+
+  .oh-category-card:nth-child(1) .oh-category-card__label {
+    font-size: 1.375rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
