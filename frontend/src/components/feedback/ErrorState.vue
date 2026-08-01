@@ -1,16 +1,19 @@
 <script setup>
-defineProps({
+import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
+
+const props = defineProps({
   title: {
     type: String,
-    default: 'Παρουσιάστηκε σφάλμα'
+    default: ''
   },
   message: {
     type: String,
-    default: 'Δοκιμάστε ξανά σε λίγο.'
+    default: ''
   },
   retryLabel: {
     type: String,
-    default: 'Επανάληψη'
+    default: ''
   },
   showRetry: {
     type: Boolean,
@@ -19,21 +22,26 @@ defineProps({
 })
 
 defineEmits(['retry'])
+
+const { t } = useI18n()
+const resolvedTitle = computed(() => props.title || t('common.feedback.errorTitle'))
+const resolvedMessage = computed(() => props.message || t('common.feedback.errorMessage'))
+const resolvedRetryLabel = computed(() => props.retryLabel || t('common.feedback.retry'))
 </script>
 
 <template>
   <div class="d-flex flex-column align-center justify-center text-center pa-8" role="alert">
     <VIcon icon="mdi-alert-circle-outline" size="48" color="error" class="mb-4" />
-    <p class="text-h6">{{ title }}</p>
-    <p class="text-body-2">{{ message }}</p>
+    <p class="text-h6">{{ resolvedTitle }}</p>
+    <p class="text-body-2 text-textSecondary">{{ resolvedMessage }}</p>
     <VBtn
       v-if="showRetry"
       color="primary"
       class="mt-4"
-      :aria-label="retryLabel"
+      :aria-label="resolvedRetryLabel"
       @click="$emit('retry')"
     >
-      {{ retryLabel }}
+      {{ resolvedRetryLabel }}
     </VBtn>
   </div>
 </template>

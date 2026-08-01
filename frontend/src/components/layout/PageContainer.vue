@@ -1,5 +1,5 @@
 <template>
-  <VContainer class="oh-page-container py-6 py-md-8">
+  <VContainer class="oh-page-container py-8 py-md-12">
     <slot />
   </VContainer>
 </template>

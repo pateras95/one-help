@@ -1,19 +1,22 @@
 <script setup>
+import { useI18n } from 'vue-i18n'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
+
+const { t } = useI18n()
 </script>
 
 <template>
   <DefaultLayout>
     <OHPageHeader
-      title="Δράσεις"
-      subtitle="Ανακαλύψτε ευκαιρίες εθελοντισμού κοντά σας."
+      :title="t('navigation.actions')"
+      :subtitle="t('pages.actions.subtitle')"
     />
 
     <EmptyState
-      title="Σύντομα διαθέσιμο"
-      message="Η λίστα δράσεων θα προστεθεί σε επόμενη φάση."
+      :title="t('pages.actions.emptyTitle')"
+      :message="t('pages.actions.emptyMessage')"
       icon="mdi-hand-heart-outline"
     />
   </DefaultLayout>

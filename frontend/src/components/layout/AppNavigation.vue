@@ -1,49 +1,42 @@
 <script setup>
-import { ref } from 'vue'
 import { useDisplay } from 'vuetify'
-import { NAVIGATION_ITEMS } from '@/constants/navigation'
+import { useRoute } from 'vue-router'
+import { useI18n } from 'vue-i18n'
+import { DESKTOP_NAVIGATION_ITEMS } from '@/constants/navigation'
 import OHLogo from '@/components/common/OHLogo.vue'
+import OHLanguageSwitcher from '@/components/common/OHLanguageSwitcher.vue'
 
 const { mobile } = useDisplay()
-const isDrawerOpen = ref(false)
+const { t } = useI18n()
+const route = useRoute()
 </script>
 
 <template>
-  <VAppBar color="primary" density="comfortable">
-    <VAppBarNavIcon
-      v-if="mobile"
-      aria-label="Άνοιγμα μενού πλοήγησης"
-      :aria-expanded="isDrawerOpen"
-      @click="isDrawerOpen = !isDrawerOpen"
-    />
-
+  <VAppBar color="surface" elevation="0" density="comfortable" class="oh-app-bar">
     <VAppBarTitle>
       <OHLogo />
     </VAppBarTitle>
 
-    <template v-if="!mobile" #append>
-      <nav aria-label="Κύρια πλοήγηση" class="d-flex">
+    <template #append>
+      <nav v-if="!mobile" :aria-label="t('navigation.desktopLandmark')" class="d-flex ga-1 mr-2">
         <VBtn
-          v-for="item in NAVIGATION_ITEMS"
+          v-for="item in DESKTOP_NAVIGATION_ITEMS"
           :key="item.to"
           :to="item.to"
-          variant="text"
+          :variant="route.path === item.to ? 'tonal' : 'text'"
+          :color="route.path === item.to ? 'primary' : undefined"
         >
-          {{ item.title }}
+          {{ t(item.labelKey) }}
         </VBtn>
       </nav>
+
+      <OHLanguageSwitcher />
     </template>
   </VAppBar>
-
-  <VNavigationDrawer v-if="mobile" v-model="isDrawerOpen" temporary>
-    <VList nav aria-label="Κύρια πλοήγηση">
-      <VListItem
-        v-for="item in NAVIGATION_ITEMS"
-        :key="item.to"
-        :to="item.to"
-        :title="item.title"
-        @click="isDrawerOpen = false"
-      />
-    </VList>
-  </VNavigationDrawer>
 </template>
+
+<style scoped>
+.oh-app-bar {
+  border-bottom: 1px solid rgb(var(--v-theme-border));
+}
+</style>

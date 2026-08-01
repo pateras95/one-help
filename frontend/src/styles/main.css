@@ -1,13 +1,20 @@
 :root {
   --oh-font-family: 'Roboto', system-ui, -apple-system, sans-serif;
-  --oh-radius-sm: 4px;
-  --oh-radius-md: 8px;
-  --oh-radius-lg: 16px;
+  --oh-radius-sm: 8px;
+  --oh-radius-md: 12px;
+  --oh-radius-lg: 20px;
   --oh-space-xs: 4px;
   --oh-space-sm: 8px;
   --oh-space-md: 16px;
   --oh-space-lg: 24px;
-  --oh-space-xl: 32px;
+  --oh-space-xl: 40px;
+  --oh-space-2xl: 64px;
+
+  /* Responsive type scale — a few deliberate roles, not a full token
+     framework. Body/card/label text still uses Vuetify's own text-* classes. */
+  --oh-text-display: clamp(2rem, 1.6rem + 2vw, 3.25rem);
+  --oh-text-page-title: clamp(1.5rem, 1.3rem + 1vw, 2.25rem);
+  --oh-text-section-title: clamp(1.25rem, 1.15rem + 0.5vw, 1.625rem);
 }
 
 html,
@@ -30,4 +37,19 @@ body {
 :focus-visible {
   outline: 2px solid rgb(var(--v-theme-primary));
   outline-offset: 2px;
+}
+
+.oh-display {
+  font-size: var(--oh-text-display);
+  line-height: 1.15;
+}
+
+.oh-page-title {
+  font-size: var(--oh-text-page-title);
+  line-height: 1.2;
+}
+
+.oh-section-title {
+  font-size: var(--oh-text-section-title);
+  line-height: 1.25;
 }

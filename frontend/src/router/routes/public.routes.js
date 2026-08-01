@@ -1,7 +1,9 @@
 import { ROUTES } from '@/constants/routes'
 
 /**
- * Public routes, accessible without authentication.
+ * Public routes, accessible without authentication. `titleKey` points at a
+ * translation key resolved at navigation time (and again on locale change)
+ * — never a literal string, so titles stay correct in both languages.
  */
 export const publicRoutes = [
   {
@@ -9,7 +11,7 @@ export const publicRoutes = [
     name: 'home',
     component: () => import('@/views/HomeView.vue'),
     meta: {
-      title: 'Αρχική',
+      titleKey: 'navigation.home',
       requiresAuth: false
     }
   },
@@ -18,7 +20,7 @@ export const publicRoutes = [
     name: 'actions',
     component: () => import('@/views/ActionsView.vue'),
     meta: {
-      title: 'Δράσεις',
+      titleKey: 'navigation.actions',
       requiresAuth: false
     }
   },
@@ -27,7 +29,7 @@ export const publicRoutes = [
     name: 'about',
     component: () => import('@/views/AboutView.vue'),
     meta: {
-      title: 'Σχετικά',
+      titleKey: 'navigation.about',
       requiresAuth: false
     }
   },
@@ -36,7 +38,7 @@ export const publicRoutes = [
     name: 'contact',
     component: () => import('@/views/ContactView.vue'),
     meta: {
-      title: 'Επικοινωνία',
+      titleKey: 'navigation.contact',
       requiresAuth: false
     }
   },
@@ -45,7 +47,7 @@ export const publicRoutes = [
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
     meta: {
-      title: 'Η σελίδα δεν βρέθηκε',
+      titleKey: 'errors.notFound.title',
       requiresAuth: false
     }
   }

@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { publicRoutes } from './routes/public.routes'
+import { applyDocumentTitle } from './documentTitle'
 
 const routes = [
   ...publicRoutes
@@ -11,5 +12,5 @@ export const router = createRouter({
 })
 
 router.beforeEach((to) => {
-  document.title = to.meta.title ? `${to.meta.title} · OneHelp` : 'OneHelp'
+  applyDocumentTitle(to.meta.titleKey)
 })

@@ -1,7 +1,9 @@
 <script setup>
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import { useNotificationsStore } from '@/stores/notifications.store'
 
+const { t } = useI18n()
 const notificationsStore = useNotificationsStore()
 const current = computed(() => notificationsStore.notifications.at(-1) ?? null)
 </script>
@@ -21,7 +23,7 @@ const current = computed(() => notificationsStore.notifications.at(-1) ?? null)
       <VBtn
         variant="text"
         icon="mdi-close"
-        aria-label="Κλείσιμο ειδοποίησης"
+        :aria-label="t('common.notifications.close')"
         @click="notificationsStore.dismiss(current.id)"
       />
     </template>

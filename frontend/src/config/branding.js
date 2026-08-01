@@ -17,7 +17,14 @@ export const branding = {
     warning: '#B8860B',
     error: '#B3261E',
     background: '#F7F9FA',
-    surface: '#FFFFFF'
+    surface: '#FFFFFF',
+    // Semantic roles layered on top of the base Material colors above —
+    // referenced by name (e.g. `color="surfaceVariant"`, `text-textSecondary`)
+    // instead of repeating hex values across components.
+    surfaceVariant: '#EEF2F6',
+    textPrimary: '#152238',
+    textSecondary: '#4B5A6B',
+    border: '#E1E7ED'
   },
   // Mirrors the mobile-first breakpoints from the project guidelines.
   breakpoints: {

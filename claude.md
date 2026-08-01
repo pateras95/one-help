@@ -541,13 +541,63 @@ During implementation:
 4. Use modern JavaScript.
 5. Add tests where useful.
 
-After implementation:
+After implementation, follow the "Feature completion reports" rule below.
 
-1. List changed files.
-2. Explain key decisions.
-3. Report commands executed.
-4. Report lint, tests and build results.
-5. Mention limitations and remaining tasks.
+## Feature completion reports
+
+After every completed feature or phase, Claude must:
+
+1. Return a concise report in the terminal response.
+2. Save the same report as a Markdown file inside `docs/reports/` (create the folder if it does not exist).
+
+Filename format:
+
+```text
+YYYY-MM-DD-feature-slug.md
+```
+
+Report sections, in this exact order and with no others added:
+
+```markdown
+# Phase Report — Feature Name
+
+## Summary
+
+## Files Created
+
+## Files Modified
+
+## Files Removed
+
+## Folder Structure
+
+## Packages Installed
+
+## Build Result
+
+## Lint Result
+
+## Test Result
+
+## Manual Verification
+
+## Remaining TODO
+
+## Suggested Next Feature
+```
+
+Rules:
+
+* Do not include an Architecture Decisions section.
+* Do not include full source files.
+* Do not include full git diffs.
+* Mention every file created, modified or removed.
+* Record the exact validation commands run.
+* Record failures honestly.
+* Keep reports concise but sufficiently detailed.
+* Do not overwrite earlier reports — each feature gets its own dated file.
+* Reports must be committed only when the user later explicitly requests a Git commit.
+* Creating the report file itself is part of completing each feature, not an optional extra step.
 
 ## Current objective
 

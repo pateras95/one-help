@@ -11,8 +11,8 @@ const oneHelpLightTheme = {
   dark: false,
   colors: {
     ...branding.colors,
-    'on-background': '#152238',
-    'on-surface': '#152238'
+    'on-background': branding.colors.textPrimary,
+    'on-surface': branding.colors.textPrimary
   }
 }
 
@@ -41,7 +41,11 @@ export const vuetify = createVuetify({
       rounded: 'lg'
     },
     VCard: {
-      rounded: 'lg'
+      // Flat + a theme-aware border reads as "trustworthy and restrained"
+      // instead of the heavier default elevation shadow.
+      rounded: 'lg',
+      variant: 'flat',
+      border: true
     }
   }
 })
