@@ -1,6 +1,12 @@
 export default {
   languageSwitcher: {
-    label: 'Language selection'
+    label: 'Language selection',
+    current: 'Current language: {language}',
+    selected: 'Selected'
+  },
+  languageNames: {
+    el: 'Greek',
+    en: 'English'
   },
   feedback: {
     loadingLabel: 'Loading...',

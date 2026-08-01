@@ -10,12 +10,13 @@ export const DEFAULT_LOCALE = 'el'
 export const LOCALE_STORAGE_KEY = 'onehelp.locale'
 
 /**
- * Each locale's own native name (autonym) and short code, for the language
- * switcher. These are intentionally NOT translated — a language's own name
- * is conventionally shown in that language regardless of the active UI
- * locale (e.g. "English" stays "English" even when the UI is in Greek).
+ * Structural per-locale data for the language switcher: short code, flag
+ * asset (local, no remote images), and the key to resolve its display name
+ * through — resolved via `t()` in the component, not here, since the
+ * display name is locale-reactive (e.g. the Greek option reads "Ελληνικά"
+ * while the UI is in Greek, but "Greek" while the UI is in English).
  */
 export const LOCALE_OPTIONS = [
-  { code: 'el', shortLabel: 'ΕΛ', nativeName: 'Ελληνικά' },
-  { code: 'en', shortLabel: 'EN', nativeName: 'English' }
+  { code: 'el', shortLabel: 'ΕΛ', flag: '/branding/locales/el.svg', nameKey: 'common.languageNames.el' },
+  { code: 'en', shortLabel: 'EN', flag: '/branding/locales/en.svg', nameKey: 'common.languageNames.en' }
 ]

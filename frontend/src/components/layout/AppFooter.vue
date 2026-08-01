@@ -11,7 +11,7 @@ const year = new Date().getFullYear()
 
 <template>
   <VFooter class="oh-footer flex-column" color="surfaceVariant">
-    <VContainer class="py-8">
+    <div class="oh-container py-8">
       <VRow>
         <VCol cols="12" sm="6" md="3">
           <OHLogo text-class="text-subtitle-1" />
@@ -56,6 +56,18 @@ const year = new Date().getFullYear()
       <p class="text-caption text-textSecondary text-center mb-0">
         {{ t('footer.copyright', { year, appName: branding.appName }) }}
       </p>
-    </VContainer>
+    </div>
   </VFooter>
 </template>
+
+<style scoped>
+/*
+ * Vuetify's VFooter has its own built-in horizontal padding (16px) —
+ * neutralized here so `.oh-container`'s own gutter is the only one that
+ * applies, keeping footer content aligned to the same column as the
+ * header and page content (same pattern as AppNavigation's app bar).
+ */
+.oh-footer {
+  padding-inline: 0;
+}
+</style>

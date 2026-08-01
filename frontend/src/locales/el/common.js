@@ -1,6 +1,12 @@
 export default {
   languageSwitcher: {
-    label: 'Επιλογή γλώσσας'
+    label: 'Επιλογή γλώσσας',
+    current: 'Τρέχουσα γλώσσα: {language}',
+    selected: 'Επιλεγμένη'
+  },
+  languageNames: {
+    el: 'Ελληνικά',
+    en: 'English'
   },
   feedback: {
     loadingLabel: 'Φόρτωση...',

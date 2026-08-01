@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 30 20" role="img" aria-labelledby="el-flag-title">
+  <title id="el-flag-title">Greek flag</title>
+  <rect width="30" height="20" fill="#0D5EAF"/>
+  <g fill="#FFFFFF">
+    <rect y="2.22" width="30" height="2.22"/>
+    <rect y="6.67" width="30" height="2.22"/>
+    <rect y="11.11" width="30" height="2.22"/>
+    <rect y="15.56" width="30" height="2.22"/>
+  </g>
+  <rect width="12" height="11.11" fill="#0D5EAF"/>
+  <g fill="#FFFFFF">
+    <rect x="4.89" width="2.22" height="11.11"/>
+    <rect y="4.44" width="12" height="2.22"/>
+  </g>
+</svg>

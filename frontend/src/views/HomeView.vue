@@ -73,28 +73,39 @@ function categoryTarget(categoryId) {
     </section>
 
     <OHSection
-      full-bleed
-      background="surfaceVariant"
+      variant="tinted"
+      center
       :title="t('home.categories.title')"
       :subtitle="t('home.categories.subtitle')"
     >
       <div class="oh-categories" role="list">
         <RouterLink
-          v-for="category in ACTION_CATEGORIES"
+          v-for="(category, index) in ACTION_CATEGORIES"
           :key="category.id"
           :to="categoryTarget(category.id)"
           class="oh-category-card"
+          :class="{ 'oh-category-card--featured': index === 0 }"
           role="listitem"
           :aria-label="t('home.categories.viewActionsAriaLabel', { category: t(category.labelKey) })"
         >
           <OHCard class="oh-category-card__inner pa-5 h-100">
-            <div class="oh-icon-chip oh-icon-chip--lg" :class="`bg-${category.accent}`">
-              <VIcon :icon="category.icon" size="32" color="white" aria-hidden="true" />
+            <VIcon
+              v-if="index === 0"
+              :icon="category.icon"
+              size="140"
+              class="oh-category-card__watermark"
+              aria-hidden="true"
+            />
+            <div
+              class="oh-icon-chip"
+              :class="[`bg-${category.accent}`, index === 0 ? 'oh-icon-chip--featured' : 'oh-icon-chip--lg']"
+            >
+              <VIcon :icon="category.icon" :size="index === 0 ? 40 : 32" color="white" aria-hidden="true" />
             </div>
             <p class="oh-category-card__label font-weight-bold mt-4 mb-1">
               {{ t(category.labelKey) }}
             </p>
-            <p class="text-body-2 text-textSecondary mb-0">
+            <p class="text-body-2 text-textSecondary oh-category-card__description mb-0">
               {{ t(category.descriptionKey) }}
             </p>
           </OHCard>
@@ -102,46 +113,46 @@ function categoryTarget(categoryId) {
       </div>
     </OHSection>
 
-    <OHSection :title="t('home.howItWorks.title')">
-      <VRow>
-        <VCol
+    <OHSection full-bleed background="surface" center :title="t('home.howItWorks.title')">
+      <div class="oh-steps">
+        <div
           v-for="(step, index) in steps"
           :key="step.key"
-          cols="12"
-          sm="4"
-          class="text-center"
+          class="oh-step"
         >
-          <div class="oh-icon-chip oh-icon-chip--lg bg-primary mx-auto mb-3">
+          <div class="oh-icon-chip oh-icon-chip--lg bg-primary mb-3">
             <VIcon :icon="step.icon" size="32" color="white" aria-hidden="true" />
           </div>
           <h3 class="text-subtitle-1 font-weight-bold">
             {{ index + 1 }}. {{ t(`home.howItWorks.${step.key}`) }}
           </h3>
-        </VCol>
-      </VRow>
+        </div>
+      </div>
     </OHSection>
 
-    <OHSection :title="t('home.cta.title')">
-      <OHCard color="primary" variant="flat" :border="false" class="pa-6 pa-md-8 text-center">
-        <p class="text-body-1 text-white oh-hero-lead mx-auto">
-          {{ t('home.cta.message') }}
-        </p>
-        <OHButton
-          color="white"
-          variant="flat"
-          size="large"
-          class="mt-4"
-          :to="ROUTES.ACTIONS"
-          :aria-label="t('home.hero.primaryCtaAriaLabel')"
-        >
-          {{ t('home.cta.button') }}
-        </OHButton>
-      </OHCard>
+    <OHSection variant="emphasis" center :title="t('home.cta.title')">
+      <p class="text-body-1 oh-hero-lead mx-auto">
+        {{ t('home.cta.message') }}
+      </p>
+      <OHButton
+        color="white"
+        variant="flat"
+        size="large"
+        class="mt-6"
+        :to="ROUTES.ACTIONS"
+        :aria-label="t('home.hero.primaryCtaAriaLabel')"
+      >
+        {{ t('home.cta.button') }}
+      </OHButton>
     </OHSection>
   </DefaultLayout>
 </template>
 
 <style scoped>
+.oh-hero {
+  padding-block-end: var(--oh-space-lg);
+}
+
 .oh-hero-lead {
   max-width: 560px;
 }
@@ -220,6 +231,10 @@ function categoryTarget(categoryId) {
   padding-bottom: var(--oh-space-sm);
   scroll-snap-type: x mandatory;
   scrollbar-width: thin;
+  /* The section heading above is centered (OHSection's `center` prop),
+     but card copy itself reads better left-aligned — override the
+     inherited centering here rather than on every text element inside. */
+  text-align: left;
 }
 
 .oh-category-card {
@@ -229,20 +244,41 @@ function categoryTarget(categoryId) {
   flex: 0 0 78%;
   max-width: 320px;
   border-radius: var(--oh-radius-lg);
-  transition: transform 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 
 .oh-category-card:hover,
 .oh-category-card:focus-visible {
   transform: translateY(-4px);
+  box-shadow: 0 12px 24px -12px rgba(21, 34, 56, 0.25);
+}
+
+.oh-category-card:focus-visible {
+  outline: 2px solid rgb(var(--v-theme-primary));
+  outline-offset: 3px;
 }
 
 .oh-category-card__inner {
+  position: relative;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .oh-category-card__label {
   font-size: 1.125rem;
+}
+
+.oh-category-card__description {
+  max-width: 32ch;
+}
+
+.oh-category-card__watermark {
+  display: none;
+}
+
+.oh-icon-chip--featured {
+  width: 88px;
+  height: 88px;
 }
 
 /*
@@ -266,13 +302,64 @@ function categoryTarget(categoryId) {
     max-width: none;
   }
 
-  .oh-category-card:nth-child(1) {
+  .oh-category-card--featured {
     grid-column: span 2;
     grid-row: span 2;
   }
 
-  .oh-category-card:nth-child(1) .oh-category-card__label {
-    font-size: 1.375rem;
+  .oh-category-card--featured .oh-category-card__label {
+    font-size: 1.5rem;
+  }
+
+  .oh-category-card--featured .oh-category-card__description {
+    max-width: 44ch;
+    font-size: 1rem;
+  }
+
+  .oh-category-card__watermark {
+    display: block;
+    position: absolute;
+    right: -24px;
+    bottom: -24px;
+    color: rgb(var(--v-theme-on-surface));
+    opacity: 0.06;
+  }
+}
+
+/* How it works: vertical stack on mobile, a connecting line on desktop. */
+.oh-steps {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--oh-space-xl);
+  text-align: center;
+}
+
+.oh-step {
+  position: relative;
+  z-index: 1;
+}
+
+@media (min-width: 768px) {
+  .oh-steps {
+    position: relative;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--oh-space-lg);
+  }
+
+  .oh-steps::before {
+    content: '';
+    position: absolute;
+    top: 32px;
+    left: 12%;
+    right: 12%;
+    height: 2px;
+    background: rgb(var(--v-theme-border));
+  }
+
+  .oh-step {
+    flex: 1;
   }
 }
 

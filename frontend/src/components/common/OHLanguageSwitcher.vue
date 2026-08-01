@@ -17,11 +17,15 @@ const currentOption = computed(
     <template #activator="{ props: menuProps }">
       <VBtn
         v-bind="menuProps"
-        variant="text"
+        variant="tonal"
+        color="primary"
         size="small"
-        :aria-label="`${t('common.languageSwitcher.label')}: ${currentOption.nativeName}`"
+        class="oh-language-switcher__trigger"
+        :aria-label="t('common.languageSwitcher.current', { language: t(currentOption.nameKey) })"
       >
-        {{ currentOption.shortLabel }}
+        <img :src="currentOption.flag" alt="" class="oh-language-switcher__flag" />
+        <span class="oh-language-switcher__code">{{ currentOption.shortLabel }}</span>
+        <VIcon icon="mdi-chevron-down" size="16" aria-hidden="true" />
       </VBtn>
     </template>
 
@@ -32,8 +36,42 @@ const currentOption = computed(
         :active="option.code === localeStore.locale"
         @click="localeStore.setLocale(option.code)"
       >
-        <VListItemTitle>{{ option.nativeName }}</VListItemTitle>
+        <template #prepend>
+          <img :src="option.flag" alt="" class="oh-language-switcher__flag" />
+        </template>
+
+        <VListItemTitle class="ml-3">{{ t(option.nameKey) }}</VListItemTitle>
+
+        <template #append>
+          <VIcon
+            v-if="option.code === localeStore.locale"
+            icon="mdi-check"
+            size="18"
+            color="primary"
+            :aria-label="t('common.languageSwitcher.selected')"
+          />
+        </template>
       </VListItem>
     </VList>
   </VMenu>
 </template>
+
+<style scoped>
+.oh-language-switcher__trigger :deep(.v-btn__content) {
+  gap: 6px;
+}
+
+.oh-language-switcher__flag {
+  width: 20px;
+  height: 14px;
+  border-radius: 2px;
+  object-fit: cover;
+  display: block;
+  flex-shrink: 0;
+}
+
+.oh-language-switcher__code {
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+</style>

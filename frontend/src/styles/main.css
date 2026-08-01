@@ -15,6 +15,28 @@
   --oh-text-display: clamp(2rem, 1.6rem + 2vw, 3.25rem);
   --oh-text-page-title: clamp(1.5rem, 1.3rem + 1vw, 2.25rem);
   --oh-text-section-title: clamp(1.25rem, 1.15rem + 0.5vw, 1.625rem);
+
+  /*
+   * The single shared content-container system: one max-width and one
+   * responsive gutter, reused everywhere content needs to align to the
+   * same column (page content, full-bleed section content, the header,
+   * the footer) via the `.oh-container` class below — instead of each
+   * surface declaring its own max-width/padding independently.
+   */
+  --oh-container-max-width: 1240px;
+  --oh-container-gutter: 16px;
+}
+
+@media (min-width: 600px) {
+  :root {
+    --oh-container-gutter: 24px;
+  }
+}
+
+@media (min-width: 960px) {
+  :root {
+    --oh-container-gutter: 32px;
+  }
 }
 
 html,
@@ -62,4 +84,12 @@ body {
 .oh-section-title {
   font-size: var(--oh-text-section-title);
   line-height: 1.25;
+}
+
+.oh-container {
+  width: 100%;
+  max-width: var(--oh-container-max-width);
+  margin-inline: auto;
+  padding-inline: max(var(--oh-container-gutter), env(safe-area-inset-left))
+    max(var(--oh-container-gutter), env(safe-area-inset-right));
 }

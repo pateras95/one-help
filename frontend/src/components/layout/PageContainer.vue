@@ -1,7 +1,7 @@
 <template>
-  <VContainer class="oh-page-container py-8 py-md-12">
+  <div class="oh-container oh-page-container py-8 py-md-12">
     <slot />
-  </VContainer>
+  </div>
 </template>
 
 <style scoped>

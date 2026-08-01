@@ -21,10 +21,13 @@ export const branding = {
     // Semantic roles layered on top of the base Material colors above —
     // referenced by name (e.g. `color="surfaceVariant"`, `text-textSecondary`)
     // instead of repeating hex values across components.
-    surfaceVariant: '#EEF2F6',
+    // `surfaceVariant` is a genuine teal-leaning tint (not just a darker
+    // neutral gray) so tinted sections read as deliberately "branded"
+    // rather than another shade of the same grey as the page background.
+    surfaceVariant: '#E3F0EE',
     textPrimary: '#152238',
     textSecondary: '#4B5A6B',
-    border: '#E1E7ED'
+    border: '#D7E0E8'
   },
   // Mirrors the mobile-first breakpoints from the project guidelines.
   breakpoints: {
