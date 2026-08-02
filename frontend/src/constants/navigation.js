@@ -9,6 +9,10 @@ import { ROLES } from '@/constants/roles'
  *
  * `labelKey` is a translation key, resolved via `t()` in the consuming
  * component — this file stays locale-independent.
+ *
+ * Contact is intentionally desktop-only (`showOnMobile: false`) — Map
+ * took its place in every four-item mobile set below, and Contact
+ * stays reachable from the desktop nav and the site footer.
  */
 export const NAVIGATION_ITEMS = [
   {
@@ -28,6 +32,14 @@ export const NAVIGATION_ITEMS = [
     showOnMobile: true
   },
   {
+    to: ROUTES.MAP,
+    routeName: 'map',
+    labelKey: 'navigation.map',
+    icon: 'mdi-map-marker-radius-outline',
+    showOnDesktop: true,
+    showOnMobile: true
+  },
+  {
     to: ROUTES.ABOUT,
     routeName: 'about',
     labelKey: 'navigation.about',
@@ -41,7 +53,7 @@ export const NAVIGATION_ITEMS = [
     labelKey: 'navigation.contact',
     icon: 'mdi-email-outline',
     showOnDesktop: true,
-    showOnMobile: true
+    showOnMobile: false
   }
 ]
 
@@ -50,41 +62,36 @@ export const MOBILE_NAVIGATION_ITEMS = NAVIGATION_ITEMS.filter((item) => item.sh
 
 /**
  * Mobile bottom-navigation sets by role, once authenticated — swaps the
- * last two logged-out items (About/Contact) for role-specific
- * destinations. Never exceeds four items. Keyed by `ROLES.*` so the
- * consuming component only needs the current user's role to pick a set.
+ * logged-out set's last item (About) for one role-specific destination.
+ * Never exceeds four items. Keyed by `ROLES.*` so the consuming
+ * component only needs the current user's role to pick a set.
+ *
+ * Account is deliberately NOT in either authenticated set — with Home,
+ * Actions, Map and one role destination already filling all four slots,
+ * Account stays reachable from the top app bar/account control instead
+ * (`AppNavigation.vue` shows it there regardless of viewport width).
  */
 export const AUTHENTICATED_MOBILE_NAVIGATION = {
   [ROLES.VOLUNTEER]: [
     NAVIGATION_ITEMS[0],
     NAVIGATION_ITEMS[1],
+    NAVIGATION_ITEMS[2],
     {
       to: ROUTES.MY_ACTIONS,
       routeName: 'my-actions',
       labelKey: 'navigation.myActions',
       icon: 'mdi-hand-heart-outline'
-    },
-    {
-      to: ROUTES.ACCOUNT,
-      routeName: 'account',
-      labelKey: 'navigation.account',
-      icon: 'mdi-account-circle-outline'
     }
   ],
   [ROLES.ORGANIZER]: [
     NAVIGATION_ITEMS[0],
     NAVIGATION_ITEMS[1],
+    NAVIGATION_ITEMS[2],
     {
       to: ROUTES.ORGANIZER,
       routeName: 'organizer',
       labelKey: 'navigation.organizerArea',
       icon: 'mdi-briefcase-outline'
-    },
-    {
-      to: ROUTES.ACCOUNT,
-      routeName: 'account',
-      labelKey: 'navigation.account',
-      icon: 'mdi-account-circle-outline'
     }
   ]
 }

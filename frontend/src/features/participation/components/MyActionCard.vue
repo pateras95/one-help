@@ -5,6 +5,7 @@ import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import { getActionCategory } from '@/constants/actionCategories'
 import { actionDetailsPath } from '@/constants/routes'
+import { ATTENDANCE_STATUS } from '@/features/attendance/utils/attendanceStatus'
 import { PARTICIPATION_STATUS } from '../utils/participationStatus'
 
 const props = defineProps({
@@ -22,6 +23,12 @@ const props = defineProps({
   cancellable: {
     type: Boolean,
     default: false
+  },
+  // `null` when no attendance record exists yet — only meaningful for a
+  // still-confirmed participation, never shown for a cancelled one.
+  attendance: {
+    type: Object,
+    default: null
   }
 })
 
@@ -39,6 +46,21 @@ const formattedDate = computed(() => {
     month: 'short'
   })
   return formatter.format(new Date(props.action.date))
+})
+
+const showAttendance = computed(() => props.participation.status === PARTICIPATION_STATUS.CONFIRMED)
+const attendanceStatus = computed(() => props.attendance?.status ?? ATTENDANCE_STATUS.NOT_CHECKED_IN)
+const attendanceColor = computed(() => (attendanceStatus.value === ATTENDANCE_STATUS.NOT_CHECKED_IN ? 'textSecondary' : 'success'))
+
+const formattedCheckedInAt = computed(() => {
+  if (!props.attendance?.checkedInAt) return ''
+  const formatter = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'el-GR', {
+    day: 'numeric',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+  return formatter.format(new Date(props.attendance.checkedInAt))
 })
 </script>
 
@@ -62,9 +84,17 @@ const formattedDate = computed(() => {
         >
           {{ t(`participation.status.${participation.status}`) }}
         </VChip>
+        <VChip v-if="showAttendance" size="small" variant="tonal" :color="attendanceColor">
+          {{ t(`attendance.myActions.${attendanceStatus}`) }}
+        </VChip>
       </div>
 
-      <h3 class="text-subtitle-1 font-weight-bold mb-3">{{ action.title }}</h3>
+      <h3 class="text-subtitle-1 font-weight-bold" :class="showAttendance && formattedCheckedInAt ? 'mb-1' : 'mb-3'">
+        {{ action.title }}
+      </h3>
+      <p v-if="showAttendance && formattedCheckedInAt" class="text-caption text-textSecondary mb-3">
+        {{ t('attendance.myActions.checkedInAt', { date: formattedCheckedInAt }) }}
+      </p>
 
       <div class="d-flex flex-column ga-1 text-body-2 text-textSecondary mb-4">
         <div class="d-flex align-center ga-2">

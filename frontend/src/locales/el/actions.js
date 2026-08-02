@@ -54,7 +54,6 @@ export default {
     whereTitle: 'Τοποθεσία',
     participantsTitle: 'Συμμετέχοντες',
     requirementsTitle: 'Απαιτούμενος εξοπλισμός',
-    mapPlaceholder: 'Ο χάρτης τοποθεσίας θα προστεθεί σε επόμενη φάση.',
     loading: 'Φόρτωση δράσης...',
     notFoundTitle: 'Η δράση δεν βρέθηκε',
     notFoundMessage: 'Η δράση που αναζητάτε δεν υπάρχει ή έχει αφαιρεθεί.',

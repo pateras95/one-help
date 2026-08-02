@@ -16,7 +16,8 @@ import {
   ROUTES,
   organizerActionDetailsPath,
   organizerActionEditPath,
-  organizerActionParticipantsPath
+  organizerActionParticipantsPath,
+  organizerActionCheckInPath
 } from '@/constants/routes'
 import { useOrganizerStore } from '../stores/organizer.store'
 import { ORGANIZER_ACTION_STATUS } from '../utils/organizerActionStatus'
@@ -145,6 +146,7 @@ const transitionActionTitle = computed(() => {
             @edit="router.push(organizerActionEditPath(action.id))"
             @participants="router.push(organizerActionParticipantsPath(action.id))"
             @transition="requestTransition(action.id, $event)"
+            @check-in="router.push(organizerActionCheckInPath(action.id))"
           />
         </VCol>
       </VRow>

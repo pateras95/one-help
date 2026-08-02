@@ -148,6 +148,7 @@ export default {
     invalidStatus: 'Invalid status.',
     invalidTransition: 'This status change is not allowed.',
     actionDateInPast: 'You cannot republish an action whose date has already passed.',
+    invalidCoordinates: 'Map coordinates must both be filled in and within range, or both left blank.',
     generic: 'Something went wrong. Please try again.'
   }
 }

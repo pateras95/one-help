@@ -60,6 +60,12 @@ async function handleLogout() {
         :title="t('navigation.myActions')"
       />
       <VListItem
+        v-if="authStore.hasRole(ROLES.VOLUNTEER)"
+        :to="ROUTES.CHECK_IN"
+        prepend-icon="mdi-qrcode-scan"
+        :title="t('navigation.checkIn')"
+      />
+      <VListItem
         v-if="authStore.hasRole(ROLES.ORGANIZER)"
         :to="ROUTES.ORGANIZER"
         prepend-icon="mdi-briefcase-outline"

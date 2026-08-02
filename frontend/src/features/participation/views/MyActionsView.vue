@@ -11,6 +11,7 @@ import { useNotificationsStore } from '@/stores/notifications.store'
 import { getActionById } from '@/features/actions/services/actions.service'
 import { isPastDate } from '@/utils/date'
 import { ROUTES } from '@/constants/routes'
+import { useAttendanceStore } from '@/features/attendance/stores/attendance.store'
 import { useParticipationStore } from '../stores/participation.store'
 import { PARTICIPATION_STATUS } from '../utils/participationStatus'
 import { participationErrorKey } from '../utils/participationErrors'
@@ -18,6 +19,7 @@ import MyActionCard from '../components/MyActionCard.vue'
 
 const { t, locale } = useI18n()
 const participationStore = useParticipationStore()
+const attendanceStore = useAttendanceStore()
 const notificationsStore = useNotificationsStore()
 
 const tab = ref('upcoming')
@@ -147,6 +149,7 @@ async function confirmCancel() {
               <MyActionCard
                 :participation="entry.participation"
                 :action="entry.action"
+                :attendance="attendanceStore.getByParticipationId(entry.participation.id)"
                 cancellable
                 @cancel="requestCancel(entry)"
               />
@@ -163,7 +166,11 @@ async function confirmCancel() {
           />
           <VRow v-else>
             <VCol v-for="entry in past" :key="entry.participation.id" cols="12" sm="6" md="4">
-              <MyActionCard :participation="entry.participation" :action="entry.action" />
+              <MyActionCard
+                :participation="entry.participation"
+                :action="entry.action"
+                :attendance="attendanceStore.getByParticipationId(entry.participation.id)"
+              />
             </VCol>
           </VRow>
         </VWindowItem>

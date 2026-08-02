@@ -5,6 +5,7 @@
 export const ROUTES = {
   HOME: '/',
   ACTIONS: '/actions',
+  MAP: '/map',
   ABOUT: '/about',
   CONTACT: '/contact',
   LOGIN: '/login',
@@ -13,6 +14,7 @@ export const ROUTES = {
   ORGANIZER: '/organizer',
   ORGANIZER_NEW_ACTION: '/organizer/actions/new',
   ACCOUNT: '/account',
+  CHECK_IN: '/check-in',
   UNAUTHORIZED: '/unauthorized'
 }
 
@@ -34,4 +36,9 @@ export function organizerActionEditPath(actionId) {
 /** Builds the read-only participant list path for an organizer-owned action. */
 export function organizerActionParticipantsPath(actionId) {
   return `${organizerActionDetailsPath(actionId)}/participants`
+}
+
+/** Builds the organizer's QR check-in screen path for an owned action. */
+export function organizerActionCheckInPath(actionId) {
+  return `${organizerActionDetailsPath(actionId)}/check-in`
 }

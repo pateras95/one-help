@@ -9,6 +9,8 @@ import elActions from './el/actions'
 import elAuth from './el/auth'
 import elParticipation from './el/participation'
 import elOrganizer from './el/organizer'
+import elAttendance from './el/attendance'
+import elMap from './el/map'
 
 import enCommon from './en/common'
 import enNavigation from './en/navigation'
@@ -21,6 +23,8 @@ import enActions from './en/actions'
 import enAuth from './en/auth'
 import enParticipation from './en/participation'
 import enOrganizer from './en/organizer'
+import enAttendance from './en/attendance'
+import enMap from './en/map'
 
 export const messages = {
   el: {
@@ -34,7 +38,9 @@ export const messages = {
     actions: elActions,
     auth: elAuth,
     participation: elParticipation,
-    organizer: elOrganizer
+    organizer: elOrganizer,
+    attendance: elAttendance,
+    map: elMap
   },
   en: {
     common: enCommon,
@@ -47,6 +53,8 @@ export const messages = {
     actions: enActions,
     auth: enAuth,
     participation: enParticipation,
-    organizer: enOrganizer
+    organizer: enOrganizer,
+    attendance: enAttendance,
+    map: enMap
   }
 }

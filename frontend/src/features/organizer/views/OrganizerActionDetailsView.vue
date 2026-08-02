@@ -11,19 +11,23 @@ import EmptyState from '@/components/feedback/EmptyState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useParticipationStore } from '@/features/participation/stores/participation.store'
 import { getLocalConfirmedCount } from '@/features/participation/utils/participationCount'
+import { useAttendanceStore } from '@/features/attendance/stores/attendance.store'
+import { ATTENDANCE_STATUS } from '@/features/attendance/utils/attendanceStatus'
 import { getActionCategory } from '@/constants/actionCategories'
 import { isPastDate } from '@/utils/date'
-import { ROUTES, organizerActionEditPath, organizerActionParticipantsPath } from '@/constants/routes'
+import { ROUTES, organizerActionEditPath, organizerActionParticipantsPath, organizerActionCheckInPath } from '@/constants/routes'
 import { useOrganizerStore } from '../stores/organizer.store'
 import { ORGANIZER_ACTION_STATUS, allowedNextStatuses } from '../utils/organizerActionStatus'
 import { organizerActionErrorKey } from '../utils/organizerActionErrors'
 import { localizeField } from '../utils/localizeField'
 import StatusTransitionDialog from '../components/StatusTransitionDialog.vue'
+import { hasValidCoordinates } from '@/features/map/utils/mapCoordinates'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const organizerStore = useOrganizerStore()
 const participationStore = useParticipationStore()
+const attendanceStore = useAttendanceStore()
 const notificationsStore = useNotificationsStore()
 
 const transitionTarget = ref(null)
@@ -31,7 +35,9 @@ const transitionTarget = ref(null)
 const actionId = computed(() => (typeof route.params.actionId === 'string' ? route.params.actionId : null))
 
 function load() {
-  if (actionId.value) organizerStore.loadActionById(actionId.value)
+  if (!actionId.value) return
+  organizerStore.loadActionById(actionId.value)
+  attendanceStore.loadActionAttendance(actionId.value)
 }
 
 onMounted(load)
@@ -59,6 +65,15 @@ const availablePlaces = computed(() => {
   if (!action.value) return 0
   return Math.max(action.value.capacity - confirmedCount.value, 0)
 })
+
+const checkedInCount = computed(
+  () =>
+    attendanceStore.actionAttendance.filter(
+      (record) => record.status === ATTENDANCE_STATUS.CHECKED_IN || record.status === ATTENDANCE_STATUS.CHECKED_OUT
+    ).length
+)
+
+const isPublished = computed(() => action.value?.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED)
 
 const formattedDate = computed(() => {
   if (!action.value) return ''
@@ -194,6 +209,9 @@ async function confirmTransition() {
               <VIcon icon="mdi-map-marker-outline" aria-hidden="true" />
               <span>{{ locationName }}, {{ municipality }}</span>
             </div>
+            <p v-if="isPublished && !hasValidCoordinates(action)" class="text-caption text-textSecondary mt-3 mb-0">
+              {{ t('map.organizerForm.missingCoordinatesNote') }}
+            </p>
           </OHCard>
 
           <OHCard class="pa-5 mb-4">
@@ -201,8 +219,11 @@ async function confirmTransition() {
             <p class="text-body-2 text-textSecondary mb-1">
               {{ t('organizer.details.confirmedCount', { confirmed: confirmedCount }) }}
             </p>
-            <p class="text-body-2 text-textSecondary mb-0">
+            <p class="text-body-2 text-textSecondary mb-1">
               {{ t('organizer.details.availablePlaces', { available: availablePlaces }) }}
+            </p>
+            <p v-if="isPublished" class="text-body-2 text-textSecondary mb-0">
+              {{ t('attendance.checkIn.checkedInCount', { count: checkedInCount }) }}
             </p>
             <OHButton
               class="mt-3"
@@ -226,6 +247,15 @@ async function confirmTransition() {
             <div class="d-flex flex-wrap ga-2">
               <OHButton color="primary" variant="tonal" :to="organizerActionEditPath(action.id)">
                 {{ t('organizer.card.edit') }}
+              </OHButton>
+              <OHButton
+                v-if="isPublished"
+                color="primary"
+                variant="tonal"
+                prepend-icon="mdi-qrcode"
+                :to="organizerActionCheckInPath(action.id)"
+              >
+                {{ t('attendance.checkIn.pageTitle') }}
               </OHButton>
               <OHButton
                 v-for="status in availableTransitions"

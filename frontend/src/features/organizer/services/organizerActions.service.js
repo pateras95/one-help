@@ -23,6 +23,17 @@ function isValidEquipment(field) {
   return Boolean(field && Array.isArray(field.el) && Array.isArray(field.en))
 }
 
+/** Coordinates are optional, but if present must both be set and within range. */
+function hasValidOptionalCoordinates(payload) {
+  const { latitude, longitude } = payload
+  if (latitude == null && longitude == null) return true
+  if (latitude == null || longitude == null) return false
+  return (
+    Number.isFinite(latitude) && latitude >= -90 && latitude <= 90 &&
+    Number.isFinite(longitude) && longitude >= -180 && longitude <= 180
+  )
+}
+
 /** Validates a create/edit form payload, returning an error code or `null`. */
 function validatePayload(payload) {
   if (!payload) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
@@ -36,6 +47,7 @@ function validatePayload(payload) {
   if (!Number.isFinite(payload.capacity) || payload.capacity <= 0) return ORGANIZER_ACTION_ERROR.INVALID_CAPACITY
   if (!isValidEquipment(payload.requiredEquipment)) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
   if (!URGENCY_LEVELS.includes(payload.urgency)) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
+  if (!hasValidOptionalCoordinates(payload)) return ORGANIZER_ACTION_ERROR.INVALID_COORDINATES
   return null
 }
 
@@ -112,8 +124,8 @@ export async function createOrganizerAction(organizerId, payload) {
     description: { el: payload.description.el.trim(), en: payload.description.en.trim() },
     locationName: { el: payload.locationName.el.trim(), en: payload.locationName.en.trim() },
     municipality: { el: municipalityText, en: municipalityText },
-    latitude: null,
-    longitude: null,
+    latitude: payload.latitude ?? null,
+    longitude: payload.longitude ?? null,
     date: payload.date,
     startTime: payload.startTime,
     capacity: payload.capacity,
@@ -162,6 +174,8 @@ export async function updateOrganizerAction(organizerId, actionId, payload) {
     description: { el: payload.description.el.trim(), en: payload.description.en.trim() },
     locationName: { el: payload.locationName.el.trim(), en: payload.locationName.en.trim() },
     municipality: { el: municipalityText, en: municipalityText },
+    latitude: payload.latitude ?? null,
+    longitude: payload.longitude ?? null,
     date: payload.date,
     startTime: payload.startTime,
     capacity: payload.capacity,

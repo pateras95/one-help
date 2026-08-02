@@ -17,6 +17,30 @@ Do not create:
 
 When data is required, use local mock data and mock service modules.
 
+## Permanently excluded features
+
+The following are permanently out of scope for this project, in any phase, and must never be implemented, stubbed, routed, or referenced as planned work:
+
+* Certificates
+* Certificate generation
+* PDF certificates
+* Exports of any kind
+* CSV export
+* Excel export
+* Participant export
+* Payments
+* Donations
+* Payment integrations
+* Payment providers
+
+Rules for these excluded features:
+
+* Do not implement them, even partially or behind a flag.
+* Do not create placeholders, routes, buttons, services, stores, or TODOs for them.
+* Do not propose them in a "Suggested Next Feature" section or any other forward-looking note.
+* Do not add dependencies that exist primarily to support them (e.g. PDF generation, spreadsheet export, payment SDKs).
+* If a future request explicitly asks for one of these, point back to this section rather than implementing it, and ask the user to confirm they want to permanently change project scope before proceeding.
+
 ## Technology stack
 
 Use:

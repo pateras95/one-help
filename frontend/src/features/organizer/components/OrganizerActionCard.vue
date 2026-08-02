@@ -16,7 +16,7 @@ const props = defineProps({
   }
 })
 
-defineEmits(['view', 'edit', 'participants', 'transition'])
+defineEmits(['view', 'edit', 'participants', 'transition', 'check-in'])
 
 const { t, locale } = useI18n()
 const participationStore = useParticipationStore()
@@ -111,6 +111,16 @@ function transitionKind(status) {
       </VBtn>
       <VBtn variant="tonal" size="small" @click="$emit('participants')">
         {{ t('organizer.card.participants') }}
+      </VBtn>
+      <VBtn
+        v-if="action.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED"
+        variant="tonal"
+        color="primary"
+        size="small"
+        prepend-icon="mdi-qrcode"
+        @click="$emit('check-in')"
+      >
+        {{ t('attendance.checkIn.pageTitle') }}
       </VBtn>
 
       <VMenu v-if="availableTransitions.length">

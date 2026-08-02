@@ -54,7 +54,6 @@ export default {
     whereTitle: 'Location',
     participantsTitle: 'Participants',
     requirementsTitle: 'Required equipment',
-    mapPlaceholder: 'A location map will be added in a later phase.',
     loading: 'Loading action...',
     notFoundTitle: 'Action not found',
     notFoundMessage: 'The action you are looking for does not exist or was removed.',

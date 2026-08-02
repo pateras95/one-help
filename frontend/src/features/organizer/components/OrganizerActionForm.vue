@@ -41,6 +41,8 @@ const startTime = ref('')
 const locationNameEl = ref('')
 const locationNameEn = ref('')
 const municipality = ref('')
+const latitude = ref('')
+const longitude = ref('')
 const capacity = ref(20)
 const urgency = ref('normal')
 const equipmentEl = ref('')
@@ -61,6 +63,8 @@ function loadFromAction(action) {
   locationNameEl.value = action.locationName.el
   locationNameEn.value = action.locationName.en
   municipality.value = action.municipality.el
+  latitude.value = action.latitude != null ? String(action.latitude) : ''
+  longitude.value = action.longitude != null ? String(action.longitude) : ''
   capacity.value = action.capacity
   urgency.value = action.urgency
   equipmentEl.value = action.requiredEquipment.el.join(', ')
@@ -90,6 +94,22 @@ function validate() {
   if (!date.value || isPastDate(date.value)) errors.date = t('organizer.form.validation.invalidDate')
   if (!TIME_PATTERN.test(startTime.value)) errors.startTime = t('organizer.form.validation.invalidTime')
 
+  const hasLatitude = latitude.value.trim() !== ''
+  const hasLongitude = longitude.value.trim() !== ''
+  if (hasLatitude !== hasLongitude) {
+    errors.latitude = t('map.validation.coordinatesRequiredTogether')
+    errors.longitude = t('map.validation.coordinatesRequiredTogether')
+  } else if (hasLatitude && hasLongitude) {
+    const latitudeValue = Number(latitude.value)
+    const longitudeValue = Number(longitude.value)
+    if (!Number.isFinite(latitudeValue) || latitudeValue < -90 || latitudeValue > 90) {
+      errors.latitude = t('map.validation.invalidLatitude')
+    }
+    if (!Number.isFinite(longitudeValue) || longitudeValue < -180 || longitudeValue > 180) {
+      errors.longitude = t('map.validation.invalidLongitude')
+    }
+  }
+
   const capacityValue = Number(capacity.value)
   if (!Number.isFinite(capacityValue) || capacityValue <= 0) {
     errors.capacity = t('organizer.form.validation.invalidCapacity')
@@ -110,6 +130,8 @@ function handleSubmit() {
     description: { el: descriptionEl.value.trim(), en: descriptionEn.value.trim() },
     locationName: { el: locationNameEl.value.trim(), en: locationNameEn.value.trim() },
     municipality: municipality.value.trim(),
+    latitude: latitude.value.trim() !== '' ? Number(latitude.value) : null,
+    longitude: longitude.value.trim() !== '' ? Number(longitude.value) : null,
     date: date.value,
     startTime: startTime.value,
     capacity: Number(capacity.value),
@@ -230,6 +252,31 @@ defineExpose({ validate })
           :label="t('organizer.form.municipalityLabel')"
           variant="outlined"
           :error-messages="fieldErrors.municipality"
+        />
+      </VCol>
+    </VRow>
+
+    <h3 class="text-subtitle-2 font-weight-bold mb-2 mt-2">{{ t('map.organizerForm.sectionCoordinates') }}</h3>
+    <p class="text-caption text-textSecondary mb-3">{{ t('map.organizerForm.coordinatesHint') }}</p>
+    <VRow>
+      <VCol cols="12" md="6">
+        <VTextField
+          v-model="latitude"
+          type="number"
+          step="any"
+          :label="t('map.organizerForm.latitudeLabel')"
+          variant="outlined"
+          :error-messages="fieldErrors.latitude"
+        />
+      </VCol>
+      <VCol cols="12" md="6">
+        <VTextField
+          v-model="longitude"
+          type="number"
+          step="any"
+          :label="t('map.organizerForm.longitudeLabel')"
+          variant="outlined"
+          :error-messages="fieldErrors.longitude"
         />
       </VCol>
     </VRow>

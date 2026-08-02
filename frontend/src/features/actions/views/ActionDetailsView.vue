@@ -14,6 +14,8 @@ import { ROUTES } from '@/constants/routes'
 import ParticipationPanel from '@/features/participation/components/ParticipationPanel.vue'
 import { useParticipationStore } from '@/features/participation/stores/participation.store'
 import { withOverlaidCount } from '@/features/participation/utils/participationCount'
+import ActionsMap from '@/features/map/components/ActionsMap.vue'
+import { hasValidCoordinates } from '@/features/map/utils/mapCoordinates'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -156,8 +158,23 @@ watch(() => route.params.actionId, load)
               <VIcon icon="mdi-map-marker-outline" aria-hidden="true" />
               <span>{{ displayAction.locationName }}, {{ displayAction.municipality }}</span>
             </div>
-            <p class="text-caption text-textSecondary mt-3 mb-0">
-              {{ t('actions.details.mapPlaceholder') }}
+
+            <template v-if="hasValidCoordinates(displayAction)">
+              <div class="oh-action-details__mini-map mt-3">
+                <ActionsMap :actions="[displayAction]" />
+              </div>
+              <OHButton
+                class="mt-3"
+                variant="text"
+                size="small"
+                prepend-icon="mdi-map-outline"
+                :to="`${ROUTES.MAP}?action=${displayAction.id}`"
+              >
+                {{ t('map.actionDetails.openFullMap') }}
+              </OHButton>
+            </template>
+            <p v-else class="text-caption text-textSecondary mt-3 mb-0">
+              {{ t('map.actionDetails.noCoordinatesNote') }}
             </p>
           </OHCard>
 
@@ -181,3 +198,9 @@ watch(() => route.params.actionId, load)
     </template>
   </DefaultLayout>
 </template>
+
+<style scoped>
+.oh-action-details__mini-map {
+  height: 180px;
+}
+</style>

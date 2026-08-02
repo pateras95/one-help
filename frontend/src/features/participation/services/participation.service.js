@@ -81,6 +81,22 @@ export async function getParticipation(userId, actionId) {
 }
 
 /**
+ * Looks up a single participation record by its own id — used by the
+ * attendance feature, which references participations by
+ * `participationId` rather than duplicating user/action fields.
+ *
+ * @param {string} participationId
+ * @returns {Promise<Object|null>}
+ */
+export async function getParticipationById(participationId) {
+  if (!participationId) {
+    return mockResponse(null, { shouldFail: true, errorMessage: PARTICIPATION_ERROR.INVALID_REQUEST })
+  }
+  const record = readParticipations().find((candidate) => candidate.id === participationId)
+  return mockResponse(record ? clone(record) : null)
+}
+
+/**
  * @param {string} userId
  * @param {string} actionId
  * @returns {Promise<boolean>}
