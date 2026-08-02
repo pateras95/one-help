@@ -11,6 +11,7 @@ export const ROUTES = {
   REGISTER: '/register',
   MY_ACTIONS: '/my-actions',
   ORGANIZER: '/organizer',
+  ORGANIZER_NEW_ACTION: '/organizer/actions/new',
   ACCOUNT: '/account',
   UNAUTHORIZED: '/unauthorized'
 }
@@ -18,4 +19,19 @@ export const ROUTES = {
 /** Builds the details path for a single action, e.g. `/actions/act-001`. */
 export function actionDetailsPath(actionId) {
   return `${ROUTES.ACTIONS}/${actionId}`
+}
+
+/** Builds the organizer-facing details path for an owned action. */
+export function organizerActionDetailsPath(actionId) {
+  return `${ROUTES.ORGANIZER}/actions/${actionId}`
+}
+
+/** Builds the edit path for an organizer-owned action. */
+export function organizerActionEditPath(actionId) {
+  return `${organizerActionDetailsPath(actionId)}/edit`
+}
+
+/** Builds the read-only participant list path for an organizer-owned action. */
+export function organizerActionParticipantsPath(actionId) {
+  return `${organizerActionDetailsPath(actionId)}/participants`
 }

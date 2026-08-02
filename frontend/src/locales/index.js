@@ -8,6 +8,7 @@ import elCategories from './el/categories'
 import elActions from './el/actions'
 import elAuth from './el/auth'
 import elParticipation from './el/participation'
+import elOrganizer from './el/organizer'
 
 import enCommon from './en/common'
 import enNavigation from './en/navigation'
@@ -19,6 +20,7 @@ import enCategories from './en/categories'
 import enActions from './en/actions'
 import enAuth from './en/auth'
 import enParticipation from './en/participation'
+import enOrganizer from './en/organizer'
 
 export const messages = {
   el: {
@@ -31,7 +33,8 @@ export const messages = {
     categories: elCategories,
     actions: elActions,
     auth: elAuth,
-    participation: elParticipation
+    participation: elParticipation,
+    organizer: elOrganizer
   },
   en: {
     common: enCommon,
@@ -43,6 +46,7 @@ export const messages = {
     categories: enCategories,
     actions: enActions,
     auth: enAuth,
-    participation: enParticipation
+    participation: enParticipation,
+    organizer: enOrganizer
   }
 }

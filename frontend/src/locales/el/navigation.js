@@ -8,6 +8,7 @@ export default {
   account: 'Λογαριασμός',
   myActions: 'Οι δράσεις μου',
   organizerArea: 'Περιοχή διοργανωτή',
+  createAction: 'Δημιουργία δράσης',
   logout: 'Αποσύνδεση',
   accountMenuAriaLabel: 'Μενού λογαριασμού',
   desktopLandmark: 'Κύρια πλοήγηση',

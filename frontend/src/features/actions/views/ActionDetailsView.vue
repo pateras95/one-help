@@ -33,8 +33,9 @@ const displayAction = computed(() => {
   if (!actionsStore.currentAction) return null
   void participationStore.countVersion
   const overlaid = withOverlaidCount(actionsStore.currentAction)
-  const status = actionsStore.currentAction.status === 'completed'
-    ? 'completed'
+  const baseStatus = actionsStore.currentAction.status
+  const status = baseStatus === 'completed' || baseStatus === 'closed'
+    ? baseStatus
     : overlaid.registeredCount >= overlaid.capacity ? 'full' : 'open'
   return { ...overlaid, status }
 })

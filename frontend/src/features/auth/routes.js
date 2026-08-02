@@ -36,16 +36,6 @@ export const authRoutes = [
     }
   },
   {
-    path: ROUTES.ORGANIZER,
-    name: 'organizer',
-    component: () => import('@/features/auth/views/OrganizerView.vue'),
-    meta: {
-      titleKey: 'navigation.organizerArea',
-      requiresAuth: true,
-      roles: [ROLES.ORGANIZER]
-    }
-  },
-  {
     path: ROUTES.ACCOUNT,
     name: 'account',
     component: () => import('@/features/auth/views/AccountView.vue'),

@@ -8,6 +8,7 @@ export default {
   account: 'Account',
   myActions: 'My actions',
   organizerArea: 'Organizer area',
+  createAction: 'Create action',
   logout: 'Log out',
   accountMenuAriaLabel: 'Account menu',
   desktopLandmark: 'Main navigation',

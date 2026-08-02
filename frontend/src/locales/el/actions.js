@@ -42,7 +42,8 @@ export default {
   status: {
     open: 'Ανοιχτή',
     full: 'Συμπληρωμένη',
-    completed: 'Ολοκληρώθηκε'
+    completed: 'Ολοκληρώθηκε',
+    closed: 'Κλειστή'
   },
   details: {
     genericTitle: 'Λεπτομέρειες δράσης',

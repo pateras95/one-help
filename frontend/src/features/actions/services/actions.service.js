@@ -1,12 +1,24 @@
 import { mockResponse } from '@/utils/mockResponse'
 import { startOfDay, isPastDate } from '@/utils/date'
-import { MOCK_ACTIONS } from '../mocks/actions.mock'
+import { getMergedActions } from '@/features/organizer/mocks/organizerActions.storage'
+import { ORGANIZER_ACTION_STATUS, PUBLIC_VISIBLE_STATUSES } from '@/features/organizer/utils/organizerActionStatus'
 
-/** Derives status from date + capacity rather than storing it (avoids drift). */
+/**
+ * Derives the public-facing status from the organizer lifecycle status
+ * plus date/capacity, rather than storing it (avoids drift). A
+ * `closed` organizer status always wins over date/capacity — an
+ * organizer closing an action makes it unavailable regardless of
+ * whether it would otherwise still read as open.
+ */
 function computeStatus(action) {
+  if (action.organizerStatus === ORGANIZER_ACTION_STATUS.CLOSED) return 'closed'
   if (isPastDate(action.date)) return 'completed'
   if (action.registeredCount >= action.capacity) return 'full'
   return 'open'
+}
+
+function isPubliclyVisible(action) {
+  return PUBLIC_VISIBLE_STATUSES.includes(action.organizerStatus)
 }
 
 /** Picks the active locale's text out of each bilingual `{ el, en }` field. */
@@ -89,7 +101,9 @@ function sortActions(list, sort) {
 export async function getActions(filters = {}) {
   const { category, search, datePreset = 'all', sort = 'soonest', locale = 'el' } = filters
 
-  const localized = MOCK_ACTIONS.map((action) => localizeAction(action, locale))
+  const localized = getMergedActions()
+    .filter(isPubliclyVisible)
+    .map((action) => localizeAction(action, locale))
   const filtered = localized
     .filter((action) => matchesCategory(action, category))
     .filter((action) => matchesSearch(action, search))
@@ -100,13 +114,15 @@ export async function getActions(filters = {}) {
 
 /**
  * Fetches a single action by id. Resolves with `null` (not a rejection)
- * when the id doesn't exist — that's a "not found" result, not an error.
+ * when the id doesn't exist, or exists but isn't publicly visible
+ * (draft/cancelled) — both read as "not found" to a public visitor.
  *
  * @param {string} id
  * @param {'el'|'en'} [locale]
  * @returns {Promise<Object|null>}
  */
 export async function getActionById(id, locale = 'el') {
-  const found = MOCK_ACTIONS.find((action) => action.id === id)
-  return mockResponse(found ? localizeAction(found, locale) : null)
+  const found = getMergedActions().find((action) => action.id === id)
+  const visible = found && isPubliclyVisible(found) ? found : null
+  return mockResponse(visible ? localizeAction(visible, locale) : null)
 }

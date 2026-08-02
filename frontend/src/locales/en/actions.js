@@ -42,7 +42,8 @@ export default {
   status: {
     open: 'Open',
     full: 'Full',
-    completed: 'Completed'
+    completed: 'Completed',
+    closed: 'Closed'
   },
   details: {
     genericTitle: 'Action details',

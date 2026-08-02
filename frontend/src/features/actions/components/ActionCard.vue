@@ -29,8 +29,8 @@ const category = computed(() => getActionCategory(props.action.categoryId))
 const displayAction = computed(() => {
   void participationStore.countVersion
   const overlaid = withOverlaidCount(props.action)
-  const status = props.action.status === 'completed'
-    ? 'completed'
+  const status = props.action.status === 'completed' || props.action.status === 'closed'
+    ? props.action.status
     : overlaid.registeredCount >= overlaid.capacity ? 'full' : 'open'
   return { ...overlaid, status }
 })
@@ -50,6 +50,7 @@ const formattedDate = computed(() => {
 const statusColor = computed(() => {
   if (displayAction.value.status === 'full') return 'textSecondary'
   if (displayAction.value.status === 'completed') return 'textSecondary'
+  if (displayAction.value.status === 'closed') return 'textSecondary'
   return 'success'
 })
 

@@ -103,6 +103,21 @@ export async function logout() {
 }
 
 /**
+ * Read-only identity lookup for another feature that needs to resolve a
+ * userId to safe, displayable fields (e.g. the organizer participant
+ * list) — never a password. Resolves `null` (not a rejection) when the
+ * id doesn't exist, mirroring `getActionById`'s "not found isn't an
+ * error" convention.
+ *
+ * @param {string} userId
+ * @returns {Promise<Object|null>} Sanitized user, or `null`.
+ */
+export async function getUserById(userId) {
+  const user = usersDb.find((candidate) => candidate.id === userId)
+  return mockResponse(user ? sanitizeUser(user) : null)
+}
+
+/**
  * Re-validates a persisted session by looking up the user id — mirrors
  * what a real app would do with a session cookie/token on boot.
  *

@@ -36,6 +36,25 @@ export async function getUserParticipations(userId) {
 }
 
 /**
+ * All participation records (confirmed and cancelled) for a single
+ * action, across every user — used by the organizer participant list.
+ * Returns raw records only (no user identity); callers resolve identity
+ * separately (e.g. via the auth service).
+ *
+ * @param {string} actionId
+ * @returns {Promise<Array<Object>>}
+ */
+export async function getActionParticipants(actionId) {
+  if (!actionId) {
+    return mockResponse([], { shouldFail: true, errorMessage: PARTICIPATION_ERROR.INVALID_REQUEST })
+  }
+  const records = readParticipations()
+    .filter((record) => record.actionId === actionId)
+    .map(clone)
+  return mockResponse(records)
+}
+
+/**
  * The "current" participation record for a user+action: the confirmed
  * record if one exists, otherwise the most recently cancelled one (so a
  * caller can still see "you cancelled this"), otherwise `null`.

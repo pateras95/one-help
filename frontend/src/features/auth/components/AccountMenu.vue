@@ -65,6 +65,12 @@ async function handleLogout() {
         prepend-icon="mdi-briefcase-outline"
         :title="t('navigation.organizerArea')"
       />
+      <VListItem
+        v-if="authStore.hasRole(ROLES.ORGANIZER)"
+        :to="ROUTES.ORGANIZER_NEW_ACTION"
+        prepend-icon="mdi-plus-circle-outline"
+        :title="t('navigation.createAction')"
+      />
 
       <VDivider class="my-1" />
 

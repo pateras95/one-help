@@ -1,4 +1,5 @@
 import { relativeDateString } from '@/utils/date'
+import { ORGANIZER_ACTION_STATUS } from '@/features/organizer/utils/organizerActionStatus'
 
 /**
  * Fictional mock volunteering actions for the Actions discovery feature.
@@ -21,11 +22,24 @@ import { relativeDateString } from '@/utils/date'
  * so there's always at least one naturally "completed" action to
  * exercise that status.
  *
+ * Ownership: `organizerId` marks which organizer account owns each
+ * action (the demo organizer owns act-001/008/012/013, exercising every
+ * `ORGANIZER_ACTION_STATUS`; the rest belong to fictional organizer ids
+ * with no login of their own, same as a real platform would have many
+ * organizations beyond the ones demoed here). `organizerStatus` is the
+ * organizer-managed lifecycle status — see `organizerActionStatus.js`
+ * for how it maps to the public open/full/completed/closed status.
+ * Organizer edits/creates are layered on top of this fixture at read
+ * time (`organizerActions.storage.js`'s `getMergedActions`) rather than
+ * mutating it, so this file always reflects the original seed data.
+ *
  * All organizations, names and events below are entirely fictional.
  */
 export const MOCK_ACTIONS = [
   {
     id: 'act-001',
+    organizerId: 'user-organizer-001',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'health',
     organization: { el: 'Χείρα Βοήθειας Αθήνας', en: 'Helping Hand Athens' },
     title: { el: 'Εθελοντική αιμοδοσία στο κέντρο της Αθήνας', en: 'Volunteer blood drive in central Athens' },
@@ -46,6 +60,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-002',
+    organizerId: 'org-ext-002',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'environment',
     organization: { el: 'Πράσινη Πόλη Θεσσαλονίκης', en: 'Green City Thessaloniki' },
     title: { el: 'Καθαρισμός παραλίας στη Θεσσαλονίκη', en: 'Beach clean-up in Thessaloniki' },
@@ -66,6 +82,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-003',
+    organizerId: 'org-ext-003',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'social',
     organization: { el: 'Κοινωνικό Δίκτυο Αλληλεγγύης Πάτρας', en: 'Patras Solidarity Network' },
     title: { el: 'Ταξινόμηση τροφίμων για κοινωνικό παντοπωλείο', en: 'Sorting food for a community pantry' },
@@ -86,6 +104,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-004',
+    organizerId: 'org-ext-004',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'animals',
     organization: { el: 'Φιλοζωική Κρήτης', en: 'Crete Animal Welfare' },
     title: { el: 'Βόλτες σκύλων στο καταφύγιο', en: 'Dog walking at the shelter' },
@@ -106,6 +126,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-005',
+    organizerId: 'org-ext-005',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'emergency',
     organization: { el: 'Ομάδα Άμεσης Επέμβασης Βόλου', en: 'Volos Rapid Response Team' },
     title: { el: 'Προετοιμασία για αντιπλημμυρική προστασία', en: 'Flood-preparedness support' },
@@ -126,6 +148,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-006',
+    organizerId: 'org-ext-006',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'health',
     organization: { el: 'Υγεία για Όλους Λάρισας', en: 'Health For All Larissa' },
     title: { el: 'Επισκέψεις συντροφιάς σε ηλικιωμένους', en: 'Companionship visits for older adults' },
@@ -146,6 +170,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-007',
+    organizerId: 'org-ext-007',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'environment',
     organization: { el: 'Αναδάσωση Ηπείρου', en: 'Epirus Reforestation' },
     title: { el: 'Φύτευση δενδρυλλίων στα Ιωάννινα', en: 'Sapling planting in Ioannina' },
@@ -166,6 +192,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-008',
+    organizerId: 'user-organizer-001',
+    organizerStatus: ORGANIZER_ACTION_STATUS.DRAFT,
     categoryId: 'social',
     organization: { el: 'Στέγη Αλληλεγγύης Αθήνας', en: 'Athens Solidarity Shelter' },
     title: { el: 'Ταξινόμηση ρούχων για δωρεά', en: 'Sorting donated clothing' },
@@ -186,6 +214,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-009',
+    organizerId: 'org-ext-009',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'animals',
     organization: { el: 'Ουρές Χαράς Θεσσαλονίκης', en: 'Thessaloniki Wagging Tails' },
     title: { el: 'Καθαρισμός καταφυγίου ζώων', en: 'Animal shelter clean-up' },
@@ -206,6 +236,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-010',
+    organizerId: 'org-ext-010',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'emergency',
     organization: { el: 'Εθελοντές Πολιτικής Προστασίας Καβάλας', en: 'Kavala Civil Protection Volunteers' },
     title: { el: 'Εκπαίδευση επιτήρησης για δασικές πυρκαγιές', en: 'Wildfire watch training' },
@@ -226,6 +258,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-011',
+    organizerId: 'org-ext-011',
+    organizerStatus: ORGANIZER_ACTION_STATUS.PUBLISHED,
     categoryId: 'health',
     organization: { el: 'Χαμόγελο Υγείας Πάτρας', en: 'Patras Health Smile' },
     title: { el: 'Εργαστήριο πρώτων βοηθειών', en: 'First aid workshop' },
@@ -246,6 +280,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-012',
+    organizerId: 'user-organizer-001',
+    organizerStatus: ORGANIZER_ACTION_STATUS.CLOSED,
     categoryId: 'social',
     organization: { el: 'Ανθρώπινο Δίκτυο Ρόδου', en: 'Rhodes Human Network' },
     title: { el: 'Ενισχυτική διδασκαλία για παιδιά', en: 'Tutoring support for children' },
@@ -266,6 +302,8 @@ export const MOCK_ACTIONS = [
   },
   {
     id: 'act-013',
+    organizerId: 'user-organizer-001',
+    organizerStatus: ORGANIZER_ACTION_STATUS.CANCELLED,
     categoryId: 'environment',
     organization: { el: 'Καθαρές Ακτές Πάτμου', en: 'Patmos Clean Shores' },
     title: { el: 'Καθαρισμός ακτών στην Πάτμο', en: 'Coastal clean-up in Patmos' },

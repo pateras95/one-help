@@ -30,7 +30,11 @@ const isOrganizer = computed(() => authStore.hasRole(ROLES.ORGANIZER))
 const currentRecord = computed(() => participationStore.getByActionId(props.action.id))
 const isConfirmed = computed(() => currentRecord.value?.status === PARTICIPATION_STATUS.CONFIRMED)
 const isFull = computed(() => props.action.registeredCount >= props.action.capacity)
-const isClosed = computed(() => props.action.status === 'completed')
+const isCompleted = computed(() => props.action.status === 'completed')
+// Organizer-closed is distinct from completed: a closed action may
+// still be in the future, so it needs its own copy rather than
+// reusing "this action has already taken place".
+const isOrganizerClosed = computed(() => props.action.status === 'closed')
 
 const formattedDate = computed(() => {
   const formatter = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'el-GR', {
@@ -113,10 +117,17 @@ async function confirmCancel() {
       </OHButton>
     </template>
 
-    <template v-else-if="isClosed">
+    <template v-else-if="isCompleted">
       <VAlert type="info" variant="tonal" density="comfortable">
         <p class="font-weight-bold mb-1">{{ t('participation.cta.unavailableTitle') }}</p>
         <p class="text-body-2 mb-0">{{ t('participation.cta.unavailableMessage') }}</p>
+      </VAlert>
+    </template>
+
+    <template v-else-if="isOrganizerClosed">
+      <VAlert type="info" variant="tonal" density="comfortable">
+        <p class="font-weight-bold mb-1">{{ t('participation.cta.closedTitle') }}</p>
+        <p class="text-body-2 mb-0">{{ t('participation.cta.closedMessage') }}</p>
       </VAlert>
     </template>
 

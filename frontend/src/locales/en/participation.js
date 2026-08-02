@@ -13,7 +13,9 @@ export default {
     fullTitle: 'This action is full',
     fullMessage: 'There are no more available places for this action.',
     unavailableTitle: 'This action is no longer available',
-    unavailableMessage: 'This action has already taken place and no longer accepts new participants.'
+    unavailableMessage: 'This action has already taken place and no longer accepts new participants.',
+    closedTitle: 'The organizer has closed participation',
+    closedMessage: 'This action no longer accepts new participants.'
   },
   organizerRestriction: {
     title: 'Organizer accounts do not join as volunteers',
