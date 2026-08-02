@@ -1,4 +1,5 @@
 import { ROUTES } from '@/constants/routes'
+import { ROLES } from '@/constants/roles'
 
 /**
  * Single source of truth for top-level navigation. Each item declares
@@ -46,3 +47,44 @@ export const NAVIGATION_ITEMS = [
 
 export const DESKTOP_NAVIGATION_ITEMS = NAVIGATION_ITEMS.filter((item) => item.showOnDesktop)
 export const MOBILE_NAVIGATION_ITEMS = NAVIGATION_ITEMS.filter((item) => item.showOnMobile)
+
+/**
+ * Mobile bottom-navigation sets by role, once authenticated — swaps the
+ * last two logged-out items (About/Contact) for role-specific
+ * destinations. Never exceeds four items. Keyed by `ROLES.*` so the
+ * consuming component only needs the current user's role to pick a set.
+ */
+export const AUTHENTICATED_MOBILE_NAVIGATION = {
+  [ROLES.VOLUNTEER]: [
+    NAVIGATION_ITEMS[0],
+    NAVIGATION_ITEMS[1],
+    {
+      to: ROUTES.MY_ACTIONS,
+      routeName: 'my-actions',
+      labelKey: 'navigation.myActions',
+      icon: 'mdi-hand-heart-outline'
+    },
+    {
+      to: ROUTES.ACCOUNT,
+      routeName: 'account',
+      labelKey: 'navigation.account',
+      icon: 'mdi-account-circle-outline'
+    }
+  ],
+  [ROLES.ORGANIZER]: [
+    NAVIGATION_ITEMS[0],
+    NAVIGATION_ITEMS[1],
+    {
+      to: ROUTES.ORGANIZER,
+      routeName: 'organizer',
+      labelKey: 'navigation.organizerArea',
+      icon: 'mdi-briefcase-outline'
+    },
+    {
+      to: ROUTES.ACCOUNT,
+      routeName: 'account',
+      labelKey: 'navigation.account',
+      icon: 'mdi-account-circle-outline'
+    }
+  ]
+}

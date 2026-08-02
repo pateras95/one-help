@@ -3,12 +3,17 @@ import { useDisplay } from 'vuetify'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
 import { DESKTOP_NAVIGATION_ITEMS } from '@/constants/navigation'
+import { ROUTES } from '@/constants/routes'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
 import OHLogo from '@/components/common/OHLogo.vue'
 import OHLanguageSwitcher from '@/components/common/OHLanguageSwitcher.vue'
+import OHButton from '@/components/common/OHButton.vue'
+import AccountMenu from '@/features/auth/components/AccountMenu.vue'
 
 const { mobile } = useDisplay()
 const { t } = useI18n()
 const route = useRoute()
+const authStore = useAuthStore()
 </script>
 
 <template>
@@ -34,7 +39,37 @@ const route = useRoute()
         </VBtn>
       </nav>
 
-      <div class="oh-app-bar__actions">
+      <div class="oh-app-bar__actions d-flex align-center ga-2">
+        <template v-if="!mobile">
+          <AccountMenu v-if="authStore.isAuthenticated" />
+          <template v-else>
+            <OHButton variant="text" :to="ROUTES.LOGIN">{{ t('navigation.login') }}</OHButton>
+            <OHButton variant="tonal" color="primary" :to="ROUTES.REGISTER">{{ t('navigation.register') }}</OHButton>
+          </template>
+        </template>
+
+        <VBtn
+          v-else-if="authStore.isAuthenticated"
+          icon
+          variant="tonal"
+          color="primary"
+          size="small"
+          :to="ROUTES.ACCOUNT"
+          :aria-label="`${t('navigation.account')}: ${authStore.currentUser.firstName} ${authStore.currentUser.lastName}`"
+        >
+          <span class="text-caption font-weight-bold" aria-hidden="true">
+            {{ authStore.currentUser.avatarInitials }}
+          </span>
+        </VBtn>
+        <VBtn
+          v-else
+          icon="mdi-login"
+          variant="text"
+          size="small"
+          :to="ROUTES.LOGIN"
+          :aria-label="t('navigation.login')"
+        />
+
         <OHLanguageSwitcher />
       </div>
     </div>

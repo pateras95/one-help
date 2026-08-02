@@ -6,7 +6,13 @@ export const ROUTES = {
   HOME: '/',
   ACTIONS: '/actions',
   ABOUT: '/about',
-  CONTACT: '/contact'
+  CONTACT: '/contact',
+  LOGIN: '/login',
+  REGISTER: '/register',
+  MY_ACTIONS: '/my-actions',
+  ORGANIZER: '/organizer',
+  ACCOUNT: '/account',
+  UNAUTHORIZED: '/unauthorized'
 }
 
 /** Builds the details path for a single action, e.g. `/actions/act-001`. */

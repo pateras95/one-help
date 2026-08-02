@@ -1,5 +1,6 @@
 import { ROUTES } from '@/constants/routes'
 import { actionsRoutes } from '@/features/actions/routes'
+import { authRoutes } from '@/features/auth/routes'
 
 /**
  * Public routes, accessible without authentication. `titleKey` points at a
@@ -17,6 +18,7 @@ export const publicRoutes = [
     }
   },
   ...actionsRoutes,
+  ...authRoutes,
   {
     path: ROUTES.ABOUT,
     name: 'about',
@@ -32,6 +34,15 @@ export const publicRoutes = [
     component: () => import('@/views/ContactView.vue'),
     meta: {
       titleKey: 'navigation.contact',
+      requiresAuth: false
+    }
+  },
+  {
+    path: ROUTES.UNAUTHORIZED,
+    name: 'unauthorized',
+    component: () => import('@/views/UnauthorizedView.vue'),
+    meta: {
+      titleKey: 'auth.unauthorized.title',
       requiresAuth: false
     }
   },

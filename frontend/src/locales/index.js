@@ -6,6 +6,7 @@ import elErrors from './el/errors'
 import elPages from './el/pages'
 import elCategories from './el/categories'
 import elActions from './el/actions'
+import elAuth from './el/auth'
 
 import enCommon from './en/common'
 import enNavigation from './en/navigation'
@@ -15,6 +16,7 @@ import enErrors from './en/errors'
 import enPages from './en/pages'
 import enCategories from './en/categories'
 import enActions from './en/actions'
+import enAuth from './en/auth'
 
 export const messages = {
   el: {
@@ -25,7 +27,8 @@ export const messages = {
     errors: elErrors,
     pages: elPages,
     categories: elCategories,
-    actions: elActions
+    actions: elActions,
+    auth: elAuth
   },
   en: {
     common: enCommon,
@@ -35,6 +38,7 @@ export const messages = {
     errors: enErrors,
     pages: enPages,
     categories: enCategories,
-    actions: enActions
+    actions: enActions,
+    auth: enAuth
   }
 }

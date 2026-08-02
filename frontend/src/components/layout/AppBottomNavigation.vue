@@ -2,11 +2,25 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
-import { MOBILE_NAVIGATION_ITEMS } from '@/constants/navigation'
+import { MOBILE_NAVIGATION_ITEMS, AUTHENTICATED_MOBILE_NAVIGATION } from '@/constants/navigation'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
 
 const route = useRoute()
 const { t } = useI18n()
+const authStore = useAuthStore()
 const activeValue = computed(() => route.path)
+
+/**
+ * Logged-out users keep the standard four-item nav; authenticated users
+ * get a role-specific set (still four items — see
+ * `AUTHENTICATED_MOBILE_NAVIGATION`). Falls back to the logged-out set if
+ * the current role has no defined set (shouldn't happen with today's
+ * roles, but keeps this resilient rather than rendering nothing).
+ */
+const items = computed(() => {
+  if (!authStore.isAuthenticated) return MOBILE_NAVIGATION_ITEMS
+  return AUTHENTICATED_MOBILE_NAVIGATION[authStore.currentUser.role] ?? MOBILE_NAVIGATION_ITEMS
+})
 </script>
 
 <template>
@@ -20,7 +34,7 @@ const activeValue = computed(() => route.path)
     class="oh-bottom-nav"
   >
     <VBtn
-      v-for="item in MOBILE_NAVIGATION_ITEMS"
+      v-for="item in items"
       :key="item.to"
       :value="item.to"
       :to="item.to"
