@@ -113,19 +113,36 @@ function categoryTarget(categoryId) {
       </div>
     </OHSection>
 
-    <OHSection full-bleed background="surface" center :title="t('home.howItWorks.title')">
+    <OHSection
+      full-bleed
+      background="surface"
+      center
+      :title="t('home.howItWorks.title')"
+      :subtitle="t('home.howItWorks.subtitle')"
+    >
       <div class="oh-steps">
+        <div class="oh-steps__line" aria-hidden="true" />
+
         <div
           v-for="(step, index) in steps"
           :key="step.key"
           class="oh-step"
         >
-          <div class="oh-icon-chip oh-icon-chip--lg bg-primary mb-3">
-            <VIcon :icon="step.icon" size="32" color="white" aria-hidden="true" />
+          <div class="oh-step__icon-wrap">
+            <div class="oh-step__halo">
+              <div class="oh-icon-chip oh-icon-chip--lg bg-primary">
+                <VIcon :icon="step.icon" size="28" color="white" aria-hidden="true" />
+              </div>
+            </div>
+            <span class="oh-step__number" aria-hidden="true">{{ index + 1 }}</span>
           </div>
-          <h3 class="text-subtitle-1 font-weight-bold">
-            {{ index + 1 }}. {{ t(`home.howItWorks.${step.key}`) }}
+
+          <h3 class="text-subtitle-1 font-weight-bold mt-4">
+            {{ t(`home.howItWorks.steps.${step.key}.title`) }}
           </h3>
+          <p class="text-body-2 text-textSecondary mt-1">
+            {{ t(`home.howItWorks.steps.${step.key}.description`) }}
+          </p>
         </div>
       </div>
     </OHSection>
@@ -326,12 +343,31 @@ function categoryTarget(categoryId) {
   }
 }
 
-/* How it works: vertical stack on mobile, a connecting line on desktop. */
+/*
+ * How it works: the heading/subtitle render above this via OHSection's
+ * own title/subtitle slot, so they're never part of this element's own
+ * stacking/positioning context — the connecting line below can only ever
+ * exist inside `.oh-steps`, never behind the heading.
+ *
+ * Mobile: a plain vertical stack (no connecting line — a line here would
+ * need to track three rows of variable-height text, which is fragile;
+ * generous spacing + numbered icons already group the steps clearly).
+ * Desktop: three balanced grid columns in a width-capped, centered
+ * container, with a connecting line spanning icon-center to icon-center
+ * (proportional to the steps container via `100% / 6`, not a viewport
+ * percentage) sitting behind the icons. Each icon has a "halo" the same
+ * color as the section background, so it visually masks the line
+ * passing behind it instead of the line touching the icon's edge.
+ */
 .oh-steps {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--oh-space-xl);
+  max-width: 760px;
+  margin-inline: auto;
+  margin-top: var(--oh-space-lg);
   text-align: center;
 }
 
@@ -340,26 +376,60 @@ function categoryTarget(categoryId) {
   z-index: 1;
 }
 
+.oh-step__icon-wrap {
+  position: relative;
+  width: 72px;
+  margin-inline: auto;
+}
+
+.oh-step__halo {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-surface));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.oh-step__number {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgb(var(--v-theme-primary));
+  color: rgb(var(--v-theme-on-primary));
+  font-size: 0.75rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid rgb(var(--v-theme-surface));
+}
+
+.oh-steps__line {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .oh-steps {
-    position: relative;
-    flex-direction: row;
-    align-items: flex-start;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    align-items: start;
     gap: var(--oh-space-lg);
   }
 
-  .oh-steps::before {
-    content: '';
+  .oh-steps__line {
+    display: block;
     position: absolute;
-    top: 32px;
-    left: 12%;
-    right: 12%;
+    top: 36px;
+    left: calc(100% / 6);
+    right: calc(100% / 6);
     height: 2px;
     background: rgb(var(--v-theme-border));
-  }
-
-  .oh-step {
-    flex: 1;
+    z-index: 0;
   }
 }
 

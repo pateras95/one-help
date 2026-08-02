@@ -7,6 +7,13 @@
  */
 export const ACTION_CATEGORIES = [
   {
+    id: 'emergency',
+    labelKey: 'categories.emergency.label',
+    descriptionKey: 'categories.emergency.description',
+    icon: 'mdi-alert-decagram-outline',
+    accent: 'error'
+  },
+  {
     id: 'health',
     labelKey: 'categories.health.label',
     descriptionKey: 'categories.health.description',
@@ -33,13 +40,6 @@ export const ACTION_CATEGORIES = [
     descriptionKey: 'categories.animals.description',
     icon: 'mdi-paw',
     accent: 'warning'
-  },
-  {
-    id: 'emergency',
-    labelKey: 'categories.emergency.label',
-    descriptionKey: 'categories.emergency.description',
-    icon: 'mdi-alert-decagram-outline',
-    accent: 'error'
   }
 ]
 

@@ -14,9 +14,21 @@ export default {
   },
   howItWorks: {
     title: 'How it works',
-    step1: 'Find an action',
-    step2: 'Join',
-    step3: 'Make an impact'
+    subtitle: 'Three simple steps to start making a difference.',
+    steps: {
+      step1: {
+        title: 'Find an action',
+        description: 'Find an action near you or matching your interests.'
+      },
+      step2: {
+        title: 'Join',
+        description: 'Confirm that you want to participate.'
+      },
+      step3: {
+        title: 'Make a meaningful contribution',
+        description: 'Attend and contribute where help is needed.'
+      }
+    }
   },
   cta: {
     title: 'Ready to make a difference?',
