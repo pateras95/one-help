@@ -28,7 +28,7 @@ export const authRoutes = [
   {
     path: ROUTES.MY_ACTIONS,
     name: 'my-actions',
-    component: () => import('@/features/auth/views/MyActionsView.vue'),
+    component: () => import('@/features/participation/views/MyActionsView.vue'),
     meta: {
       titleKey: 'navigation.myActions',
       requiresAuth: true,

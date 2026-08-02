@@ -1,17 +1,10 @@
 import { mockResponse } from '@/utils/mockResponse'
+import { startOfDay, isPastDate } from '@/utils/date'
 import { MOCK_ACTIONS } from '../mocks/actions.mock'
-
-function startOfDay(dateLike) {
-  const date = new Date(dateLike)
-  date.setHours(0, 0, 0, 0)
-  return date
-}
 
 /** Derives status from date + capacity rather than storing it (avoids drift). */
 function computeStatus(action) {
-  const today = startOfDay(new Date())
-  const actionDate = startOfDay(action.date)
-  if (actionDate < today) return 'completed'
+  if (isPastDate(action.date)) return 'completed'
   if (action.registeredCount >= action.capacity) return 'full'
   return 'open'
 }

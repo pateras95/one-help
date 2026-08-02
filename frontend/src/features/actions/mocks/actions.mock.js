@@ -1,3 +1,5 @@
+import { relativeDateString } from '@/utils/date'
+
 /**
  * Fictional mock volunteering actions for the Actions discovery feature.
  *
@@ -9,6 +11,15 @@
  * self-contained and avoids polluting the app's permanent translations
  * with content that has no long-term value. `actions.service.js` picks
  * the right language for the active locale before returning results.
+ *
+ * Date strategy: dates are computed relative to whenever the app loads
+ * (`relativeDateString(daysFromNow)`), not hardcoded absolute strings —
+ * otherwise every fixture date would eventually become "the past" as
+ * real time moves on, permanently changing every action's status. Each
+ * action keeps the same relative spacing it was originally designed
+ * with (e.g. act-001 is always "9 days out"); act-011 stays at -12 days
+ * so there's always at least one naturally "completed" action to
+ * exercise that status.
  *
  * All organizations, names and events below are entirely fictional.
  */
@@ -26,7 +37,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Αθήνα', en: 'Athens' },
     latitude: 37.9755,
     longitude: 23.7348,
-    date: '2026-08-10',
+    date: relativeDateString(9),
     startTime: '10:00',
     capacity: 20,
     registeredCount: 14,
@@ -46,7 +57,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Θεσσαλονίκη', en: 'Thessaloniki' },
     latitude: 40.6320,
     longitude: 22.9481,
-    date: '2026-08-15',
+    date: relativeDateString(14),
     startTime: '09:00',
     capacity: 30,
     registeredCount: 22,
@@ -66,7 +77,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Πάτρα', en: 'Patras' },
     latitude: 38.2466,
     longitude: 21.7346,
-    date: '2026-08-20',
+    date: relativeDateString(19),
     startTime: '11:00',
     capacity: 15,
     registeredCount: 15,
@@ -86,7 +97,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Ηράκλειο', en: 'Heraklion' },
     latitude: 35.3387,
     longitude: 25.1442,
-    date: '2026-08-22',
+    date: relativeDateString(21),
     startTime: '17:00',
     capacity: 12,
     registeredCount: 5,
@@ -106,7 +117,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Βόλος', en: 'Volos' },
     latitude: 39.3622,
     longitude: 22.9425,
-    date: '2026-08-12',
+    date: relativeDateString(11),
     startTime: '08:00',
     capacity: 25,
     registeredCount: 9,
@@ -126,7 +137,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Λάρισα', en: 'Larissa' },
     latitude: 39.6390,
     longitude: 22.4194,
-    date: '2026-09-01',
+    date: relativeDateString(31),
     startTime: '10:30',
     capacity: 10,
     registeredCount: 4,
@@ -146,7 +157,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Ιωάννινα', en: 'Ioannina' },
     latitude: 39.6650,
     longitude: 20.8537,
-    date: '2026-09-05',
+    date: relativeDateString(35),
     startTime: '09:00',
     capacity: 40,
     registeredCount: 40,
@@ -166,7 +177,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Αθήνα', en: 'Athens' },
     latitude: 37.9838,
     longitude: 23.7275,
-    date: '2026-08-18',
+    date: relativeDateString(17),
     startTime: '16:00',
     capacity: 18,
     registeredCount: 6,
@@ -186,7 +197,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Θεσσαλονίκη', en: 'Thessaloniki' },
     latitude: 40.6401,
     longitude: 22.9444,
-    date: '2026-09-10',
+    date: relativeDateString(40),
     startTime: '10:00',
     capacity: 16,
     registeredCount: 13,
@@ -206,7 +217,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Καβάλα', en: 'Kavala' },
     latitude: 40.9397,
     longitude: 24.4021,
-    date: '2026-08-25',
+    date: relativeDateString(24),
     startTime: '08:30',
     capacity: 20,
     registeredCount: 7,
@@ -226,7 +237,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Πάτρα', en: 'Patras' },
     latitude: 38.2466,
     longitude: 21.7346,
-    date: '2026-07-20',
+    date: relativeDateString(-12),
     startTime: '18:00',
     capacity: 25,
     registeredCount: 25,
@@ -246,7 +257,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Ρόδος', en: 'Rhodes' },
     latitude: 36.4341,
     longitude: 28.2176,
-    date: '2026-09-15',
+    date: relativeDateString(45),
     startTime: '17:30',
     capacity: 12,
     registeredCount: 3,
@@ -266,7 +277,7 @@ export const MOCK_ACTIONS = [
     municipality: { el: 'Πάτμος', en: 'Patmos' },
     latitude: 37.3086,
     longitude: 26.5453,
-    date: '2026-08-30',
+    date: relativeDateString(29),
     startTime: '09:30',
     capacity: 20,
     registeredCount: 11,

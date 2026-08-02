@@ -5,6 +5,10 @@ import { getActionCategory } from '@/constants/actionCategories'
 import { actionDetailsPath } from '@/constants/routes'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { useParticipationStore } from '@/features/participation/stores/participation.store'
+import { withOverlaidCount } from '@/features/participation/utils/participationCount'
+import { ROLES } from '@/constants/roles'
 
 const props = defineProps({
   action: {
@@ -14,8 +18,26 @@ const props = defineProps({
 })
 
 const { t, locale } = useI18n()
+const authStore = useAuthStore()
+const participationStore = useParticipationStore()
 
 const category = computed(() => getActionCategory(props.action.categoryId))
+
+// Overlays the local confirmed-participation count on the base mock
+// figure, and re-derives 'full' the same way ActionDetailsView does, so
+// the list and details page can never disagree on a count/status.
+const displayAction = computed(() => {
+  void participationStore.countVersion
+  const overlaid = withOverlaidCount(props.action)
+  const status = props.action.status === 'completed'
+    ? 'completed'
+    : overlaid.registeredCount >= overlaid.capacity ? 'full' : 'open'
+  return { ...overlaid, status }
+})
+
+const isJoined = computed(
+  () => authStore.hasRole(ROLES.VOLUNTEER) && participationStore.isParticipating(props.action.id)
+)
 
 const formattedDate = computed(() => {
   const formatter = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'el-GR', {
@@ -26,8 +48,8 @@ const formattedDate = computed(() => {
 })
 
 const statusColor = computed(() => {
-  if (props.action.status === 'full') return 'textSecondary'
-  if (props.action.status === 'completed') return 'textSecondary'
+  if (displayAction.value.status === 'full') return 'textSecondary'
+  if (displayAction.value.status === 'completed') return 'textSecondary'
   return 'success'
 })
 
@@ -61,6 +83,11 @@ const urgencyColor = computed(() => {
       </VChip>
     </div>
 
+    <div v-if="isJoined" class="d-flex align-center ga-1 mb-2">
+      <VIcon icon="mdi-check-circle" size="16" color="success" aria-hidden="true" />
+      <span class="text-caption text-success">{{ t('participation.card.alreadyJoined') }}</span>
+    </div>
+
     <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ action.title }}</h3>
     <p class="text-body-2 text-textSecondary oh-action-card__description mb-3">
       {{ action.description }}
@@ -83,10 +110,10 @@ const urgencyColor = computed(() => {
 
     <div class="d-flex align-center justify-space-between mb-4">
       <span class="text-caption text-textSecondary">
-        {{ t('actions.card.participants', { registered: action.registeredCount, capacity: action.capacity }) }}
+        {{ t('actions.card.participants', { registered: displayAction.registeredCount, capacity: displayAction.capacity }) }}
       </span>
       <VChip size="x-small" :color="statusColor" variant="tonal">
-        {{ t(`actions.status.${action.status}`) }}
+        {{ t(`actions.status.${displayAction.status}`) }}
       </VChip>
     </div>
 

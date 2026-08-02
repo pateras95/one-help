@@ -11,23 +11,42 @@ import EmptyState from '@/components/feedback/EmptyState.vue'
 import { useActionsStore } from '@/features/actions/stores/actions.store'
 import { getActionCategory } from '@/constants/actionCategories'
 import { ROUTES } from '@/constants/routes'
+import ParticipationPanel from '@/features/participation/components/ParticipationPanel.vue'
+import { useParticipationStore } from '@/features/participation/stores/participation.store'
+import { withOverlaidCount } from '@/features/participation/utils/participationCount'
 
 const { t, locale } = useI18n()
 const route = useRoute()
 const actionsStore = useActionsStore()
+const participationStore = useParticipationStore()
 
 const category = computed(() =>
   actionsStore.currentAction ? getActionCategory(actionsStore.currentAction.categoryId) : null
 )
 
+// Overlays the local (this-browser) confirmed participation count on top
+// of the base mock figure, and re-derives 'full' from that overlaid
+// count — the base action's own status can't know about joins made
+// only in localStorage. `countVersion` isn't read directly but is
+// listed so this recomputes after every join/cancel.
+const displayAction = computed(() => {
+  if (!actionsStore.currentAction) return null
+  void participationStore.countVersion
+  const overlaid = withOverlaidCount(actionsStore.currentAction)
+  const status = actionsStore.currentAction.status === 'completed'
+    ? 'completed'
+    : overlaid.registeredCount >= overlaid.capacity ? 'full' : 'open'
+  return { ...overlaid, status }
+})
+
 const formattedDate = computed(() => {
-  if (!actionsStore.currentAction) return ''
+  if (!displayAction.value) return ''
   const formatter = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'el-GR', {
     weekday: 'long',
     day: 'numeric',
     month: 'long'
   })
-  return formatter.format(new Date(actionsStore.currentAction.date))
+  return formatter.format(new Date(displayAction.value.date))
 })
 
 function load() {
@@ -80,33 +99,33 @@ watch(() => route.params.actionId, load)
           {{ t(category.labelKey) }}
         </VChip>
         <VChip size="small" variant="tonal">
-          {{ t(`actions.status.${actionsStore.currentAction.status}`) }}
+          {{ t(`actions.status.${displayAction.status}`) }}
         </VChip>
         <VChip
-          v-if="actionsStore.currentAction.urgency !== 'normal'"
+          v-if="displayAction.urgency !== 'normal'"
           size="small"
-          :color="actionsStore.currentAction.urgency === 'urgent' ? 'error' : 'warning'"
+          :color="displayAction.urgency === 'urgent' ? 'error' : 'warning'"
         >
-          {{ t(`actions.urgency.${actionsStore.currentAction.urgency}`) }}
+          {{ t(`actions.urgency.${displayAction.urgency}`) }}
         </VChip>
       </div>
 
       <h1 class="oh-page-title font-weight-bold text-textPrimary mb-6">
-        {{ actionsStore.currentAction.title }}
+        {{ displayAction.title }}
       </h1>
 
       <VRow>
         <VCol cols="12" md="8">
           <OHCard class="pa-5 mb-4">
             <h2 class="text-subtitle-1 font-weight-bold mb-2">{{ t('actions.details.aboutTitle') }}</h2>
-            <p class="text-body-1 text-textSecondary mb-0">{{ actionsStore.currentAction.description }}</p>
+            <p class="text-body-1 text-textSecondary mb-0">{{ displayAction.description }}</p>
           </OHCard>
 
-          <OHCard v-if="actionsStore.currentAction.requiredEquipment.length" class="pa-5">
+          <OHCard v-if="displayAction.requiredEquipment.length" class="pa-5">
             <h2 class="text-subtitle-1 font-weight-bold mb-2">{{ t('actions.details.requirementsTitle') }}</h2>
             <VList density="compact">
               <VListItem
-                v-for="item in actionsStore.currentAction.requiredEquipment"
+                v-for="item in displayAction.requiredEquipment"
                 :key="item"
                 :title="item"
                 prepend-icon="mdi-check-circle-outline"
@@ -116,6 +135,8 @@ watch(() => route.params.actionId, load)
         </VCol>
 
         <VCol cols="12" md="4">
+          <ParticipationPanel :action="displayAction" class="mb-4" />
+
           <OHCard class="pa-5 mb-4">
             <h2 class="text-subtitle-2 font-weight-bold mb-3">{{ t('actions.details.whenTitle') }}</h2>
             <div class="d-flex align-center ga-2 text-body-2 text-textSecondary">
@@ -124,7 +145,7 @@ watch(() => route.params.actionId, load)
             </div>
             <div class="d-flex align-center ga-2 text-body-2 text-textSecondary mt-1">
               <VIcon icon="mdi-clock-outline" aria-hidden="true" />
-              <span>{{ actionsStore.currentAction.startTime }}</span>
+              <span>{{ displayAction.startTime }}</span>
             </div>
           </OHCard>
 
@@ -132,7 +153,7 @@ watch(() => route.params.actionId, load)
             <h2 class="text-subtitle-2 font-weight-bold mb-3">{{ t('actions.details.whereTitle') }}</h2>
             <div class="d-flex align-center ga-2 text-body-2 text-textSecondary">
               <VIcon icon="mdi-map-marker-outline" aria-hidden="true" />
-              <span>{{ actionsStore.currentAction.locationName }}, {{ actionsStore.currentAction.municipality }}</span>
+              <span>{{ displayAction.locationName }}, {{ displayAction.municipality }}</span>
             </div>
             <p class="text-caption text-textSecondary mt-3 mb-0">
               {{ t('actions.details.mapPlaceholder') }}
@@ -143,14 +164,14 @@ watch(() => route.params.actionId, load)
             <h2 class="text-subtitle-2 font-weight-bold mb-3">{{ t('actions.details.organizerTitle') }}</h2>
             <div class="d-flex align-center ga-2 text-body-2 text-textSecondary mb-4">
               <VIcon icon="mdi-account-group-outline" aria-hidden="true" />
-              <span>{{ actionsStore.currentAction.organization }}</span>
+              <span>{{ displayAction.organization }}</span>
             </div>
 
             <h2 class="text-subtitle-2 font-weight-bold mb-2">{{ t('actions.details.participantsTitle') }}</h2>
             <span class="text-body-2 text-textSecondary">
               {{ t('actions.card.participants', {
-                registered: actionsStore.currentAction.registeredCount,
-                capacity: actionsStore.currentAction.capacity
+                registered: displayAction.registeredCount,
+                capacity: displayAction.capacity
               }) }}
             </span>
           </OHCard>
