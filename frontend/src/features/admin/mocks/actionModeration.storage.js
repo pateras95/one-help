@@ -102,3 +102,17 @@ export function setModerationStatus(actionId, status, { reason = null, reviewedB
   writeModerationRecords(records)
   return entry
 }
+
+/**
+ * Permanently removes the moderation record for the given actions —
+ * used by `demoteOrganizerToVolunteer`. Never touches moderation
+ * records for any other action.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteModerationRecordsByActionIds(actionIds) {
+  if (!actionIds.length) return
+  const records = readModerationRecords()
+  const remaining = records.filter((record) => !actionIds.includes(record.actionId))
+  if (remaining.length !== records.length) writeModerationRecords(remaining)
+}

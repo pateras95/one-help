@@ -82,6 +82,9 @@ const transitionActionTitle = computed(() => {
   <DefaultLayout>
     <OHPageHeader :title="t('organizer.dashboard.title')" :subtitle="t('organizer.dashboard.subtitle')">
       <template #actions>
+        <OHButton variant="outlined" prepend-icon="mdi-domain" :to="ROUTES.ORGANIZER_ORGANIZATION">
+          {{ t('organizer.dashboard.myOrganization') }}
+        </OHButton>
         <OHButton color="primary" prepend-icon="mdi-plus" :to="ROUTES.ORGANIZER_NEW_ACTION">
           {{ t('organizer.dashboard.createAction') }}
         </OHButton>

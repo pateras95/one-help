@@ -18,6 +18,16 @@ export const organizerRoutes = [
     }
   },
   {
+    path: ROUTES.ORGANIZER_ORGANIZATION,
+    name: 'organizer-organization',
+    component: () => import('@/features/organizer/views/OrganizerOrganizationView.vue'),
+    meta: {
+      titleKey: 'organizer.organization.pageTitle',
+      requiresAuth: true,
+      roles: [ROLES.ORGANIZER]
+    }
+  },
+  {
     path: ROUTES.ORGANIZER_NEW_ACTION,
     name: 'organizer-action-create',
     component: () => import('@/features/organizer/views/OrganizerActionFormView.vue'),

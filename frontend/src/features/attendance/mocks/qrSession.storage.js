@@ -81,3 +81,17 @@ export function upsertQrSession(session) {
   writeQrSessions(sessions)
   return session
 }
+
+/**
+ * Permanently removes every QR session for the given actions — used by
+ * `demoteOrganizerToVolunteer`. Never touches sessions for any other
+ * action.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteQrSessionsByActionIds(actionIds) {
+  if (!actionIds.length) return
+  const sessions = readQrSessions()
+  const remaining = sessions.filter((session) => !actionIds.includes(session.actionId))
+  if (remaining.length !== sessions.length) writeQrSessions(remaining)
+}

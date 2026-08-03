@@ -50,6 +50,7 @@ export default {
     back: 'Πίσω στις δράσεις',
     aboutTitle: 'Σχετικά με τη δράση',
     organizerTitle: 'Διοργανωτής',
+    organizationTitle: 'Σχετικά με τον οργανισμό',
     whenTitle: 'Ημερομηνία & ώρα',
     whereTitle: 'Τοποθεσία',
     participantsTitle: 'Συμμετέχοντες',

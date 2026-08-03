@@ -116,6 +116,7 @@ async function handleLogout() {
         </template>
         <template v-else-if="authStore.hasRole(ROLES.ORGANIZER)">
           <VListItem :to="ROUTES.ORGANIZER" prepend-icon="mdi-briefcase-outline" :title="t('navigation.organizerArea')" />
+          <VListItem :to="ROUTES.ORGANIZER_ORGANIZATION" prepend-icon="mdi-domain" :title="t('navigation.myOrganization')" />
           <VListItem :to="ROUTES.ACCOUNT" prepend-icon="mdi-account-outline" :title="t('navigation.account')" />
         </template>
       </template>
@@ -152,6 +153,12 @@ async function handleLogout() {
           :to="ROUTES.ORGANIZER"
           prepend-icon="mdi-briefcase-outline"
           :title="t('navigation.organizerArea')"
+        />
+        <VListItem
+          v-if="authStore.hasRole(ROLES.ORGANIZER)"
+          :to="ROUTES.ORGANIZER_ORGANIZATION"
+          prepend-icon="mdi-domain"
+          :title="t('navigation.myOrganization')"
         />
         <VListItem
           v-if="authStore.hasRole(ROLES.ORGANIZER)"

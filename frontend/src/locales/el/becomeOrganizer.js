@@ -100,6 +100,21 @@ export default {
     invalidCategories: 'Επίλεξε τουλάχιστον μία έγκυρη κατηγορία.',
     termsNotAccepted: 'Πρέπει να επιβεβαιώσεις ότι τα στοιχεία είναι ακριβή.',
     suspended: 'Ο λογαριασμός οργάνωσής σου βρίσκεται σε αναστολή.',
+    duplicateName: 'Αυτή η επωνυμία χρησιμοποιείται ήδη από άλλη οργάνωση.',
+    notOrganizer: 'Δεν είσαι ο διοργανωτής καμίας οργάνωσης.',
     generic: 'Κάτι πήγε στραβά. Δοκίμασε ξανά.'
+  },
+  demotion: {
+    dialogTitle: 'Αφαίρεση οργάνωσης και επιστροφή σε εθελοντή;',
+    dialogMessage: 'Αυτό θα αφαιρέσει μόνιμα την οργάνωση «{name}» και όλα τα σχετικά δεδομένα της. Αυτή η ενέργεια δεν αναιρείται.',
+    consequencesTitle: 'Θα αφαιρεθούν μόνιμα:',
+    consequenceOrganization: 'Η οργάνωση',
+    consequenceActions: 'Όλες οι δράσεις της οργάνωσης',
+    consequenceParticipations: 'Οι συμμετοχές εθελοντών σε αυτές τις δράσεις',
+    consequenceAttendance: 'Δεδομένα παρουσίας/check-in',
+    consequenceReports: 'Σχετικές αναφορές',
+    confirmCheckboxLabel: 'Κατάλαβα ότι αυτή η ενέργεια είναι μόνιμη και δεν αναιρείται.',
+    cancel: 'Ακύρωση',
+    confirmAction: 'Αφαίρεση οργάνωσης'
   }
 }

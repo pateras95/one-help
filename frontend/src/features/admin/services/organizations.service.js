@@ -7,6 +7,8 @@ import { ADMIN_ERROR } from '../utils/adminErrors'
 import { ROLES } from '@/constants/roles'
 import { setUserRoleOverride } from '@/features/auth/mocks/userRole.storage'
 import { createOwnerMembership, setMembershipStatusForOrganization } from '@/features/organizerApplication/mocks/organizationMembership.storage'
+import { APPLICATION_ERROR } from '@/features/organizerApplication/utils/applicationErrors'
+import { validateOrganizationPayload, buildOrganizationFieldsFromPayload } from '@/features/organizerApplication/utils/organizationValidation'
 
 function clone(org) {
   return org ? { ...org } : org
@@ -191,5 +193,38 @@ export async function restoreOrganization(adminUserId, organizationId) {
     targetId: organizationId,
     metadata: { name: updated.name.en }
   })
+  return mockResponse(clone(updated))
+}
+
+/**
+ * Edits an organization's own profile fields from the admin side (name,
+ * type, description, contact info, address/municipality, categories) —
+ * reuses the exact same field validation as the organizer-facing
+ * application/profile flows, so an admin edit can never produce a
+ * record the organizer-facing forms would themselves reject. Approval
+ * status is unaffected — that only ever changes via the dedicated
+ * approve/reject/suspend/restore transitions above.
+ *
+ * @param {string} adminUserId
+ * @param {string} organizationId
+ * @param {Object} payload
+ * @returns {Promise<Object>}
+ */
+export async function updateOrganizationDetails(adminUserId, organizationId, payload) {
+  if (!adminUserId || !organizationId) {
+    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+  }
+  const organization = findOrganization(organizationId)
+  if (!organization) {
+    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_FOUND })
+  }
+
+  const validationError = validateOrganizationPayload(payload, { excludeOrganizationId: organizationId, requireAcceptedTerms: false })
+  if (validationError) {
+    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
+  }
+
+  const updated = { ...organization, ...buildOrganizationFieldsFromPayload(payload) }
+  upsertOrganization(updated)
   return mockResponse(clone(updated))
 }

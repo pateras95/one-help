@@ -13,6 +13,7 @@ export default {
     errorTitle: 'Could not load this data',
     errorMessage: 'Please try again shortly.',
     view: 'View',
+    edit: 'Edit',
     close: 'Close',
     cancel: 'Cancel'
   },
@@ -24,6 +25,8 @@ export default {
     reasonRequired: 'A reason is required.',
     duplicateOpenReport: 'You already have an open report for this action.',
     cannotReportOwnAction: 'You cannot report your own action.',
+    duplicateEmail: 'This email is already used by another account.',
+    capacityBelowConfirmed: 'Capacity cannot be lower than already confirmed participants.',
     generic: 'Something went wrong. Please try again.'
   },
   accountStatus: {
@@ -78,7 +81,28 @@ export default {
     registeredAt: 'Registered {date}',
     suspendAction: 'Suspend',
     reactivateAction: 'Reactivate',
+    editAction: 'Edit user',
     cannotSuspendSelf: 'You cannot suspend your own account.',
+    viewOrganizationLink: 'View organization',
+    viewActionsLink: 'View actions',
+    integrityWarningNoOrganization: 'This organizer has no linked organization — possible data integrity issue.',
+    search: {
+      label: 'Search users',
+      resultCount: '{count} results',
+      noResultsTitle: 'No results',
+      noResultsMessage: 'Try different search terms.'
+    },
+    editDialog: {
+      title: 'Edit user',
+      firstNameLabel: 'First name',
+      lastNameLabel: 'Last name',
+      emailLabel: 'Email',
+      saveAction: 'Save',
+      validation: {
+        required: 'This field is required.',
+        invalidEmail: 'Enter a valid email address.'
+      }
+    },
     suspendDialog: {
       title: 'Suspend this user?',
       message: 'Suspending {name} will prevent them from signing in until you reactivate their account.'
@@ -95,7 +119,8 @@ export default {
     },
     notifications: {
       suspendSuccess: 'The user account was suspended.',
-      reactivateSuccess: 'The user account was reactivated.'
+      reactivateSuccess: 'The user account was reactivated.',
+      editSuccess: 'The user profile was updated.'
     }
   },
   organizations: {
@@ -104,6 +129,19 @@ export default {
     emptyTitle: 'No organizations yet',
     emptyMessage: 'Organizer applications will appear here.',
     submittedAt: 'Submitted {date}',
+    ownerLabel: 'Owner',
+    actionCounts: '{total} actions total ({public} public, {hidden} hidden)',
+    removeOrganizerAction: 'Remove organizer and organization',
+    search: {
+      label: 'Search organizations',
+      resultCount: '{count} results',
+      noResultsTitle: 'No results',
+      noResultsMessage: 'Try different search terms.'
+    },
+    editDialog: {
+      title: 'Edit "{name}"',
+      saveAction: 'Save changes'
+    },
     actions: {
       approve: 'Approve',
       reject: 'Reject',
@@ -138,7 +176,9 @@ export default {
       approveSuccess: 'The organization was approved.',
       rejectSuccess: 'The organization was rejected.',
       suspendSuccess: 'The organization was suspended.',
-      restoreSuccess: 'The organization was restored.'
+      restoreSuccess: 'The organization was restored.',
+      editSuccess: 'The organization details were updated.',
+      removeSuccess: 'The organizer and organization "{name}" were removed.'
     }
   },
   actions: {
@@ -146,6 +186,15 @@ export default {
     subtitle: 'Review and moderate actions across every organizer lifecycle state.',
     emptyTitle: 'No actions yet',
     emptyMessage: 'Organizer actions will appear here.',
+    search: {
+      label: 'Search actions',
+      resultCount: '{count} results',
+      noResultsTitle: 'No results',
+      noResultsMessage: 'Try different search terms.'
+    },
+    editDialog: {
+      title: 'Edit "{title}"'
+    },
     actions: {
       approve: 'Approve',
       reject: 'Reject',
@@ -173,6 +222,7 @@ export default {
       organizerStatusLabel: 'Organizer status',
       moderationStatusLabel: 'Moderation status',
       organizationLabel: 'Organization',
+      organizerLabel: 'Organizer',
       moderationReasonLabel: 'Moderation reason',
       openPublicPage: 'Open public page'
     },
@@ -180,7 +230,8 @@ export default {
       approveSuccess: 'The action was approved.',
       rejectSuccess: 'The action was rejected.',
       hideSuccess: 'The action was hidden.',
-      restoreSuccess: 'The action was restored.'
+      restoreSuccess: 'The action was restored.',
+      editSuccess: 'The action details were updated.'
     }
   },
   reports: {
@@ -235,7 +286,8 @@ export default {
       actionRejected: 'Rejected the action "{title}" ({reason})',
       actionHidden: 'Hid the action "{title}"',
       actionRestored: 'Restored the action "{title}"',
-      reportStatusChanged: 'Changed a report status from {fromStatus} to {toStatus}'
+      reportStatusChanged: 'Changed a report status from {fromStatus} to {toStatus}',
+      organizerDemoted: 'Removed the organizer and organization "{name}" ({actionsRemoved} actions)'
     }
   }
 }

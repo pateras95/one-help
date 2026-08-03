@@ -13,6 +13,7 @@ export const ROUTES = {
   MY_ACTIONS: '/my-actions',
   ORGANIZER: '/organizer',
   ORGANIZER_NEW_ACTION: '/organizer/actions/new',
+  ORGANIZER_ORGANIZATION: '/organizer/organization',
   ACCOUNT: '/account',
   CHECK_IN: '/check-in',
   UNAUTHORIZED: '/unauthorized',

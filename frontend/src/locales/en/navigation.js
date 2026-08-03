@@ -11,6 +11,7 @@ export default {
   myActionsMobile: 'Joined',
   checkIn: 'Check-in',
   organizerArea: 'Organizer area',
+  myOrganization: 'My organization',
   becomeOrganizer: 'Become an organizer',
   applicationStatus: 'Application status',
   admin: 'Admin',

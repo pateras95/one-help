@@ -6,7 +6,8 @@ import {
   approveOrganization as approveOrganizationRequest,
   rejectOrganization as rejectOrganizationRequest,
   suspendOrganization as suspendOrganizationRequest,
-  restoreOrganization as restoreOrganizationRequest
+  restoreOrganization as restoreOrganizationRequest,
+  updateOrganizationDetails as updateOrganizationDetailsRequest
 } from '../services/organizations.service'
 
 /** Owns the admin organization list and its approve/reject/suspend/restore actions. */
@@ -63,6 +64,17 @@ export const useAdminOrganizationsStore = defineStore('adminOrganizations', () =
     return updated
   }
 
+  async function updateOrganizationDetails(organizationId, payload) {
+    const updated = await updateOrganizationDetailsRequest(currentAdminId(), organizationId, payload)
+    replace(updated)
+    return updated
+  }
+
+  /** Drops an organization from the in-memory list — used after a demotion permanently removes it. */
+  function remove(organizationId) {
+    organizations.value = organizations.value.filter((org) => org.id !== organizationId)
+  }
+
   return {
     organizations,
     loading,
@@ -71,6 +83,8 @@ export const useAdminOrganizationsStore = defineStore('adminOrganizations', () =
     approveOrganization,
     rejectOrganization,
     suspendOrganization,
-    restoreOrganization
+    restoreOrganization,
+    updateOrganizationDetails,
+    remove
   }
 })

@@ -50,6 +50,7 @@ export default {
     back: 'Back to actions',
     aboutTitle: 'About this action',
     organizerTitle: 'Organizer',
+    organizationTitle: 'About the organization',
     whenTitle: 'Date & time',
     whereTitle: 'Location',
     participantsTitle: 'Participants',

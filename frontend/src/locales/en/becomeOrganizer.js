@@ -100,6 +100,21 @@ export default {
     invalidCategories: 'Select at least one valid category.',
     termsNotAccepted: 'You must confirm the information is accurate.',
     suspended: 'Your organization account is currently suspended.',
+    duplicateName: 'This name is already used by another organization.',
+    notOrganizer: 'You are not the organizer of any organization.',
     generic: 'Something went wrong. Please try again.'
+  },
+  demotion: {
+    dialogTitle: 'Remove organization and become a volunteer?',
+    dialogMessage: 'This will permanently remove the organization "{name}" and all of its related data. This action cannot be undone.',
+    consequencesTitle: 'The following will be permanently removed:',
+    consequenceOrganization: 'The organization',
+    consequenceActions: 'All of the organization\'s actions',
+    consequenceParticipations: 'Volunteer participations in those actions',
+    consequenceAttendance: 'Attendance / check-in data',
+    consequenceReports: 'Related reports',
+    confirmCheckboxLabel: 'I understand this action is permanent and cannot be undone.',
+    cancel: 'Cancel',
+    confirmAction: 'Remove organization'
   }
 }

@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
@@ -10,6 +11,11 @@ import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
+import { getApplicationForUser } from '@/features/organizerApplication/services/organizationApplication.service'
+import { localizeField } from '@/features/organizer/utils/localizeField'
+import { ROLES } from '@/constants/roles'
+import { ROUTES } from '@/constants/routes'
+import { matchesSearchQuery } from '@/utils/normalizeSearchText'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
 import AdminConfirmDialog from '../components/AdminConfirmDialog.vue'
@@ -18,14 +24,33 @@ import { ACCOUNT_STATUS } from '../utils/accountStatus'
 import { adminErrorKey } from '../utils/adminErrors'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const usersStore = useAdminUsersStore()
 const notificationsStore = useNotificationsStore()
 const authStore = useAuthStore()
 
-onMounted(usersStore.fetchUsers)
+const organizationsByUserId = ref({})
+
+async function loadOrganizations() {
+  const organizerUsers = usersStore.users.filter((user) => user.role === ROLES.ORGANIZER)
+  const entries = await Promise.all(
+    organizerUsers.map(async (user) => [user.id, await getApplicationForUser(user.id)])
+  )
+  organizationsByUserId.value = Object.fromEntries(entries)
+}
+
+onMounted(async () => {
+  await usersStore.fetchUsers()
+  await loadOrganizations()
+})
+
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
 
 const viewDialog = ref({ open: false, user: null })
 const confirmDialog = ref({ open: false, user: null, action: null, loading: false })
+const editDialog = ref({ open: false, user: null, saving: false })
+const editForm = ref({ firstName: '', lastName: '', email: '' })
+const editErrors = ref({})
 
 function isSelf(user) {
   return user.id === authStore.currentUser?.id
@@ -45,6 +70,23 @@ function formatDate(isoString) {
   })
   return formatter.format(new Date(isoString))
 }
+
+function organizationFor(user) {
+  return organizationsByUserId.value[user.id] ?? null
+}
+
+const filteredUsers = computed(() => {
+  return usersStore.users.filter((user) => {
+    const org = organizationFor(user)
+    return matchesSearchQuery(searchQuery.value, [
+      `${user.firstName} ${user.lastName}`,
+      user.email,
+      t(`auth.roles.${user.role}`),
+      t(`admin.accountStatus.${user.status}`),
+      org ? localizeField(org.name, locale.value) : ''
+    ])
+  })
+})
 
 function openView(user) {
   viewDialog.value = { open: true, user }
@@ -76,6 +118,46 @@ async function handleConfirm() {
   }
 }
 
+function openEdit(user) {
+  editForm.value = { firstName: user.firstName, lastName: user.lastName, email: user.email }
+  editErrors.value = {}
+  editDialog.value = { open: true, user, saving: false }
+}
+
+function closeEdit() {
+  editDialog.value = { ...editDialog.value, open: false }
+}
+
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function validateEdit() {
+  const errors = {}
+  if (!editForm.value.firstName.trim()) errors.firstName = t('admin.users.editDialog.validation.required')
+  if (!editForm.value.lastName.trim()) errors.lastName = t('admin.users.editDialog.validation.required')
+  if (!editForm.value.email.trim() || !EMAIL_PATTERN.test(editForm.value.email.trim())) {
+    errors.email = t('admin.users.editDialog.validation.invalidEmail')
+  }
+  editErrors.value = errors
+  return Object.keys(errors).length === 0
+}
+
+async function handleEditSave() {
+  if (!validateEdit()) return
+  editDialog.value = { ...editDialog.value, saving: true }
+  try {
+    await usersStore.updateUserProfile(editDialog.value.user.id, {
+      firstName: editForm.value.firstName.trim(),
+      lastName: editForm.value.lastName.trim(),
+      email: editForm.value.email.trim()
+    })
+    notificationsStore.notify(t('admin.users.notifications.editSuccess'), { type: 'success' })
+    closeEdit()
+  } catch (err) {
+    notificationsStore.notify(t(adminErrorKey(err.message)), { type: 'error' })
+    editDialog.value = { ...editDialog.value, saving: false }
+  }
+}
+
 const confirmTitle = computed(() => {
   if (!confirmDialog.value.user) return ''
   return confirmDialog.value.action === 'suspend'
@@ -96,6 +178,20 @@ const confirmMessage = computed(() => {
     <OHPageHeader :title="t('admin.users.pageTitle')" :subtitle="t('admin.users.subtitle')" />
     <AdminNavTabs />
 
+    <VTextField
+      v-model="searchQuery"
+      class="mb-2"
+      :label="t('admin.users.search.label')"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="comfortable"
+      clearable
+      hide-details
+    />
+    <p v-if="!usersStore.loading && !usersStore.error" class="text-caption text-textSecondary mb-4">
+      {{ t('admin.users.search.resultCount', { count: filteredUsers.length }) }}
+    </p>
+
     <LoadingState v-if="usersStore.loading" :label="t('admin.common.loading')" />
 
     <ErrorState
@@ -112,9 +208,16 @@ const confirmMessage = computed(() => {
       icon="mdi-account-multiple-outline"
     />
 
+    <EmptyState
+      v-else-if="filteredUsers.length === 0"
+      :title="t('admin.users.search.noResultsTitle')"
+      :message="t('admin.users.search.noResultsMessage')"
+      icon="mdi-magnify"
+    />
+
     <OHCard v-else class="pa-0">
       <VList :aria-label="t('admin.users.pageTitle')">
-        <template v-for="(user, index) in usersStore.users" :key="user.id">
+        <template v-for="(user, index) in filteredUsers" :key="user.id">
           <VDivider v-if="index > 0" />
           <VListItem>
             <div class="d-flex flex-wrap align-center justify-space-between ga-3 w-100 py-2">
@@ -128,6 +231,31 @@ const confirmMessage = computed(() => {
                   <p class="text-caption text-textSecondary mb-0">
                     {{ t('admin.users.registeredAt', { date: formatDate(user.createdAt) }) }}
                   </p>
+
+                  <template v-if="user.role === ROLES.ORGANIZER">
+                    <div v-if="organizationFor(user)" class="d-flex flex-wrap align-center ga-2 mt-1">
+                      <VChip size="small" variant="tonal" prepend-icon="mdi-domain">
+                        {{ localizeField(organizationFor(user).name, locale) }}
+                      </VChip>
+                      <OHButton
+                        size="small"
+                        variant="text"
+                        :to="{ path: ROUTES.ADMIN_ORGANIZATIONS, query: { q: localizeField(organizationFor(user).name, locale) } }"
+                      >
+                        {{ t('admin.users.viewOrganizationLink') }}
+                      </OHButton>
+                      <OHButton
+                        size="small"
+                        variant="text"
+                        :to="{ path: ROUTES.ADMIN_ACTIONS, query: { q: `${user.firstName} ${user.lastName}` } }"
+                      >
+                        {{ t('admin.users.viewActionsLink') }}
+                      </OHButton>
+                    </div>
+                    <VAlert v-else type="warning" variant="tonal" density="compact" class="mt-2">
+                      {{ t('admin.users.integrityWarningNoOrganization') }}
+                    </VAlert>
+                  </template>
                 </div>
               </div>
 
@@ -147,6 +275,13 @@ const confirmMessage = computed(() => {
                     variant="text"
                     :aria-label="`${t('admin.common.view')} — ${user.firstName} ${user.lastName}`"
                     @click="openView(user)"
+                  />
+                  <VBtn
+                    icon="mdi-pencil-outline"
+                    size="small"
+                    variant="text"
+                    :aria-label="`${t('admin.users.editAction')} — ${user.firstName} ${user.lastName}`"
+                    @click="openEdit(user)"
                   />
                   <OHButton
                     v-if="user.status === ACCOUNT_STATUS.SUSPENDED"
@@ -205,6 +340,42 @@ const confirmMessage = computed(() => {
         <VCardActions>
           <VSpacer />
           <VBtn variant="text" @click="viewDialog.open = false">{{ t('admin.common.close') }}</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <VDialog :model-value="editDialog.open" max-width="480" @update:model-value="closeEdit">
+      <VCard v-if="editDialog.user">
+        <VCardTitle>{{ t('admin.users.editDialog.title') }}</VCardTitle>
+        <VCardText>
+          <VTextField
+            v-model="editForm.firstName"
+            class="mb-2"
+            :label="t('admin.users.editDialog.firstNameLabel')"
+            variant="outlined"
+            :error-messages="editErrors.firstName"
+          />
+          <VTextField
+            v-model="editForm.lastName"
+            class="mb-2"
+            :label="t('admin.users.editDialog.lastNameLabel')"
+            variant="outlined"
+            :error-messages="editErrors.lastName"
+          />
+          <VTextField
+            v-model="editForm.email"
+            type="email"
+            :label="t('admin.users.editDialog.emailLabel')"
+            variant="outlined"
+            :error-messages="editErrors.email"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" :disabled="editDialog.saving" @click="closeEdit">{{ t('admin.common.cancel') }}</VBtn>
+          <VBtn color="primary" :loading="editDialog.saving" :disabled="editDialog.saving" @click="handleEditSave">
+            {{ t('admin.users.editDialog.saveAction') }}
+          </VBtn>
         </VCardActions>
       </VCard>
     </VDialog>

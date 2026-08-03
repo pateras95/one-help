@@ -97,3 +97,17 @@ export function updateAttendanceRecord(record) {
   }
   return record
 }
+
+/**
+ * Permanently removes every attendance/check-in record for the given
+ * actions — used by `demoteOrganizerToVolunteer`. Never touches
+ * attendance for any other action.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteAttendanceByActionIds(actionIds) {
+  if (!actionIds.length) return
+  const records = readAttendance()
+  const remaining = records.filter((record) => !actionIds.includes(record.actionId))
+  if (remaining.length !== records.length) writeAttendance(remaining)
+}

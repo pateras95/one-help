@@ -13,6 +13,7 @@ export default {
     errorTitle: 'Δεν ήταν δυνατή η φόρτωση των δεδομένων',
     errorMessage: 'Δοκίμασε ξανά σε λίγο.',
     view: 'Προβολή',
+    edit: 'Επεξεργασία',
     close: 'Κλείσιμο',
     cancel: 'Ακύρωση'
   },
@@ -24,6 +25,8 @@ export default {
     reasonRequired: 'Απαιτείται αιτιολογία.',
     duplicateOpenReport: 'Έχεις ήδη μια ανοιχτή αναφορά για αυτή τη δράση.',
     cannotReportOwnAction: 'Δεν μπορείς να αναφέρεις τη δική σου δράση.',
+    duplicateEmail: 'Αυτό το email χρησιμοποιείται ήδη από άλλο λογαριασμό.',
+    capacityBelowConfirmed: 'Η χωρητικότητα δεν μπορεί να είναι μικρότερη από τους ήδη επιβεβαιωμένους συμμετέχοντες.',
     generic: 'Κάτι πήγε στραβά. Δοκίμασε ξανά.'
   },
   accountStatus: {
@@ -78,7 +81,28 @@ export default {
     registeredAt: 'Εγγραφή {date}',
     suspendAction: 'Αναστολή',
     reactivateAction: 'Επανενεργοποίηση',
+    editAction: 'Επεξεργασία χρήστη',
     cannotSuspendSelf: 'Δεν μπορείς να αναστείλεις τον δικό σου λογαριασμό.',
+    viewOrganizationLink: 'Προβολή οργάνωσης',
+    viewActionsLink: 'Προβολή δράσεων',
+    integrityWarningNoOrganization: 'Αυτός ο διοργανωτής δεν έχει συνδεδεμένη οργάνωση — πιθανό πρόβλημα ακεραιότητας δεδομένων.',
+    search: {
+      label: 'Αναζήτηση χρηστών',
+      resultCount: '{count} αποτελέσματα',
+      noResultsTitle: 'Κανένα αποτέλεσμα',
+      noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
+    },
+    editDialog: {
+      title: 'Επεξεργασία χρήστη',
+      firstNameLabel: 'Όνομα',
+      lastNameLabel: 'Επώνυμο',
+      emailLabel: 'Email',
+      saveAction: 'Αποθήκευση',
+      validation: {
+        required: 'Το πεδίο είναι υποχρεωτικό.',
+        invalidEmail: 'Δώσε μια έγκυρη διεύθυνση email.'
+      }
+    },
     suspendDialog: {
       title: 'Αναστολή αυτού του χρήστη;',
       message: 'Η αναστολή του/της {name} θα τον/την εμποδίσει να συνδεθεί μέχρι να επανενεργοποιήσεις τον λογαριασμό του/της.'
@@ -95,7 +119,8 @@ export default {
     },
     notifications: {
       suspendSuccess: 'Ο λογαριασμός χρήστη ανεστάλη.',
-      reactivateSuccess: 'Ο λογαριασμός χρήστη επανενεργοποιήθηκε.'
+      reactivateSuccess: 'Ο λογαριασμός χρήστη επανενεργοποιήθηκε.',
+      editSuccess: 'Τα στοιχεία του χρήστη ενημερώθηκαν.'
     }
   },
   organizations: {
@@ -104,6 +129,19 @@ export default {
     emptyTitle: 'Καμία οργάνωση ακόμα',
     emptyMessage: 'Οι αιτήσεις διοργανωτών θα εμφανίζονται εδώ.',
     submittedAt: 'Υποβλήθηκε {date}',
+    ownerLabel: 'Ιδιοκτήτης',
+    actionCounts: '{total} δράσεις σύνολο ({public} δημόσιες, {hidden} κρυφές)',
+    removeOrganizerAction: 'Αφαίρεση διοργανωτή και οργάνωσης',
+    search: {
+      label: 'Αναζήτηση οργανώσεων',
+      resultCount: '{count} αποτελέσματα',
+      noResultsTitle: 'Κανένα αποτέλεσμα',
+      noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
+    },
+    editDialog: {
+      title: 'Επεξεργασία «{name}»',
+      saveAction: 'Αποθήκευση αλλαγών'
+    },
     actions: {
       approve: 'Έγκριση',
       reject: 'Απόρριψη',
@@ -138,7 +176,9 @@ export default {
       approveSuccess: 'Η οργάνωση εγκρίθηκε.',
       rejectSuccess: 'Η οργάνωση απορρίφθηκε.',
       suspendSuccess: 'Η οργάνωση ανεστάλη.',
-      restoreSuccess: 'Η οργάνωση αποκαταστάθηκε.'
+      restoreSuccess: 'Η οργάνωση αποκαταστάθηκε.',
+      editSuccess: 'Τα στοιχεία της οργάνωσης ενημερώθηκαν.',
+      removeSuccess: 'Ο διοργανωτής και η οργάνωση «{name}» αφαιρέθηκαν.'
     }
   },
   actions: {
@@ -146,6 +186,15 @@ export default {
     subtitle: 'Έλεγξε και συντόνισε δράσεις σε κάθε κατάσταση κύκλου ζωής διοργανωτή.',
     emptyTitle: 'Καμία δράση ακόμα',
     emptyMessage: 'Οι δράσεις διοργανωτών θα εμφανίζονται εδώ.',
+    search: {
+      label: 'Αναζήτηση δράσεων',
+      resultCount: '{count} αποτελέσματα',
+      noResultsTitle: 'Κανένα αποτέλεσμα',
+      noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
+    },
+    editDialog: {
+      title: 'Επεξεργασία «{title}»'
+    },
     actions: {
       approve: 'Έγκριση',
       reject: 'Απόρριψη',
@@ -173,6 +222,7 @@ export default {
       organizerStatusLabel: 'Κατάσταση διοργανωτή',
       moderationStatusLabel: 'Κατάσταση ελέγχου',
       organizationLabel: 'Οργάνωση',
+      organizerLabel: 'Διοργανωτής',
       moderationReasonLabel: 'Αιτιολογία ελέγχου',
       openPublicPage: 'Άνοιγμα δημόσιας σελίδας'
     },
@@ -180,7 +230,8 @@ export default {
       approveSuccess: 'Η δράση εγκρίθηκε.',
       rejectSuccess: 'Η δράση απορρίφθηκε.',
       hideSuccess: 'Η δράση αποκρύφθηκε.',
-      restoreSuccess: 'Η δράση αποκαταστάθηκε.'
+      restoreSuccess: 'Η δράση αποκαταστάθηκε.',
+      editSuccess: 'Τα στοιχεία της δράσης ενημερώθηκαν.'
     }
   },
   reports: {
@@ -235,7 +286,8 @@ export default {
       actionRejected: 'Απέρριψε τη δράση «{title}» ({reason})',
       actionHidden: 'Απέκρυψε τη δράση «{title}»',
       actionRestored: 'Αποκατέστησε τη δράση «{title}»',
-      reportStatusChanged: 'Άλλαξε την κατάσταση μιας αναφοράς από {fromStatus} σε {toStatus}'
+      reportStatusChanged: 'Άλλαξε την κατάσταση μιας αναφοράς από {fromStatus} σε {toStatus}',
+      organizerDemoted: 'Αφαίρεσε τον διοργανωτή και την οργάνωση «{name}» ({actionsRemoved} δράσεις)'
     }
   }
 }

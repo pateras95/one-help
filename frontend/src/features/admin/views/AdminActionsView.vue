@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
@@ -12,6 +13,11 @@ import { useNotificationsStore } from '@/stores/notifications.store'
 import { localizeField } from '@/features/organizer/utils/localizeField'
 import { getActionCategory } from '@/constants/actionCategories'
 import { actionDetailsPath } from '@/constants/routes'
+import { getAllUsers } from '@/features/auth/services/auth.service'
+import { getLocalConfirmedCount } from '@/features/participation/utils/participationCount'
+import { matchesSearchQuery } from '@/utils/normalizeSearchText'
+import OrganizerActionForm from '@/features/organizer/components/OrganizerActionForm.vue'
+import { organizerActionErrorKey } from '@/features/organizer/utils/organizerActionErrors'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
 import AdminConfirmDialog from '../components/AdminConfirmDialog.vue'
@@ -20,13 +26,23 @@ import { ACTION_MODERATION_STATUS } from '../utils/actionModerationStatus'
 import { adminErrorKey } from '../utils/adminErrors'
 
 const { t, locale } = useI18n()
+const route = useRoute()
 const actionsStore = useAdminActionsStore()
 const notificationsStore = useNotificationsStore()
 
-onMounted(actionsStore.fetchActions)
+const usersById = ref({})
+
+onMounted(async () => {
+  const users = await getAllUsers()
+  usersById.value = Object.fromEntries(users.map((user) => [user.id, user]))
+  await actionsStore.fetchActions()
+})
+
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
 
 const viewDialog = ref({ open: false, action: null })
 const actionDialog = ref({ open: false, action: null, decision: null, loading: false })
+const editDialog = ref({ open: false, action: null, saving: false })
 
 const MODERATION_CHIP = {
   [ACTION_MODERATION_STATUS.PENDING_REVIEW]: { color: 'warning', icon: 'mdi-clock-outline' },
@@ -41,6 +57,10 @@ function title(action) {
 function organizationName(action) {
   return action.organizationName ? localizeField(action.organizationName, locale.value) : ''
 }
+function organizerName(action) {
+  const user = usersById.value[action.organizerId]
+  return user ? `${user.firstName} ${user.lastName}` : ''
+}
 
 function formatDate(isoString) {
   const formatter = new Intl.DateTimeFormat(locale.value === 'en' ? 'en-GB' : 'el-GR', {
@@ -50,6 +70,22 @@ function formatDate(isoString) {
   })
   return formatter.format(new Date(isoString))
 }
+
+const filteredActions = computed(() => {
+  return actionsStore.actions.filter((action) => {
+    const category = getActionCategory(action.categoryId)
+    return matchesSearchQuery(searchQuery.value, [
+      title(action),
+      organizationName(action),
+      organizerName(action),
+      category ? t(category.labelKey) : '',
+      localizeField(action.municipality, locale.value),
+      localizeField(action.locationName, locale.value),
+      t(`organizer.status.${action.organizerStatus}`),
+      t(`admin.moderationStatus.${action.moderationStatus}`)
+    ])
+  })
+})
 
 function openView(action) {
   viewDialog.value = { open: true, action }
@@ -86,6 +122,30 @@ async function handleConfirm(reason) {
   }
 }
 
+function openEdit(action) {
+  editDialog.value = { open: true, action, saving: false }
+}
+function closeEdit() {
+  editDialog.value = { ...editDialog.value, open: false }
+}
+
+const editMinCapacity = computed(() => {
+  if (!editDialog.value.action) return 0
+  return editDialog.value.action.registeredCount + getLocalConfirmedCount(editDialog.value.action.id)
+})
+
+async function handleEditSave(payload) {
+  editDialog.value = { ...editDialog.value, saving: true }
+  try {
+    await actionsStore.updateActionDetails(editDialog.value.action.id, payload)
+    notificationsStore.notify(t('admin.actions.notifications.editSuccess'), { type: 'success' })
+    closeEdit()
+  } catch (err) {
+    notificationsStore.notify(t(organizerActionErrorKey(err.message)), { type: 'error' })
+    editDialog.value = { ...editDialog.value, saving: false }
+  }
+}
+
 const decisionCopy = {
   approve: { titleKey: 'admin.actions.approveDialog.title', messageKey: 'admin.actions.approveDialog.message', color: 'success' },
   reject: { titleKey: 'admin.actions.rejectDialog.title', messageKey: 'admin.actions.rejectDialog.message', color: 'error' },
@@ -107,6 +167,20 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
     <OHPageHeader :title="t('admin.actions.pageTitle')" :subtitle="t('admin.actions.subtitle')" />
     <AdminNavTabs />
 
+    <VTextField
+      v-model="searchQuery"
+      class="mb-2"
+      :label="t('admin.actions.search.label')"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="comfortable"
+      clearable
+      hide-details
+    />
+    <p v-if="!actionsStore.loading && !actionsStore.error" class="text-caption text-textSecondary mb-4">
+      {{ t('admin.actions.search.resultCount', { count: filteredActions.length }) }}
+    </p>
+
     <LoadingState v-if="actionsStore.loading" :label="t('admin.common.loading')" />
 
     <ErrorState
@@ -123,8 +197,15 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
       icon="mdi-clipboard-text-outline"
     />
 
+    <EmptyState
+      v-else-if="filteredActions.length === 0"
+      :title="t('admin.actions.search.noResultsTitle')"
+      :message="t('admin.actions.search.noResultsMessage')"
+      icon="mdi-magnify"
+    />
+
     <VRow v-else>
-      <VCol v-for="action in actionsStore.actions" :key="action.id" cols="12" sm="6" md="4">
+      <VCol v-for="action in filteredActions" :key="action.id" cols="12" sm="6" md="4">
         <OHCard class="pa-4 h-100 d-flex flex-column">
           <div class="d-flex flex-wrap align-center ga-2 mb-2">
             <VChip v-if="getActionCategory(action.categoryId)" size="small" variant="tonal" :prepend-icon="getActionCategory(action.categoryId).icon">
@@ -140,11 +221,15 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
           />
           <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ title(action) }}</h3>
           <p class="text-body-2 text-textSecondary mb-1">{{ organizationName(action) }}</p>
+          <p class="text-caption text-textSecondary mb-1">{{ organizerName(action) }}</p>
           <p class="text-caption text-textSecondary mb-3">{{ formatDate(action.date) }}</p>
 
           <div class="d-flex flex-wrap ga-2 mt-auto">
             <OHButton size="small" variant="text" prepend-icon="mdi-eye-outline" @click="openView(action)">
               {{ t('admin.common.view') }}
+            </OHButton>
+            <OHButton size="small" variant="text" prepend-icon="mdi-pencil-outline" @click="openEdit(action)">
+              {{ t('admin.common.edit') }}
             </OHButton>
             <OHButton
               v-if="action.moderationStatus === ACTION_MODERATION_STATUS.PENDING_REVIEW"
@@ -201,6 +286,9 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
           <p class="text-body-2 mb-1">
             <strong>{{ t('admin.actions.viewDialog.organizationLabel') }}:</strong> {{ organizationName(viewDialog.action) }}
           </p>
+          <p class="text-body-2 mb-1">
+            <strong>{{ t('admin.actions.viewDialog.organizerLabel') }}:</strong> {{ organizerName(viewDialog.action) }}
+          </p>
           <p v-if="viewDialog.action.moderationReason" class="text-body-2 mb-1">
             <strong>{{ t('admin.actions.viewDialog.moderationReasonLabel') }}:</strong> {{ viewDialog.action.moderationReason }}
           </p>
@@ -217,6 +305,24 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
         <VCardActions>
           <VSpacer />
           <VBtn variant="text" @click="viewDialog.open = false">{{ t('admin.common.close') }}</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
+    <VDialog :model-value="editDialog.open" max-width="900" scrollable @update:model-value="closeEdit">
+      <VCard v-if="editDialog.action">
+        <VCardTitle>{{ t('admin.actions.editDialog.title', { title: title(editDialog.action) }) }}</VCardTitle>
+        <VCardText>
+          <OrganizerActionForm
+            :initial-action="editDialog.action"
+            :min-capacity="editMinCapacity"
+            :submitting="editDialog.saving"
+            @submit="handleEditSave"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" :disabled="editDialog.saving" @click="closeEdit">{{ t('admin.common.cancel') }}</VBtn>
         </VCardActions>
       </VCard>
     </VDialog>

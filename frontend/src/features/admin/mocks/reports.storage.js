@@ -89,3 +89,17 @@ export function upsertReport(record) {
   writeReports(records)
   return record
 }
+
+/**
+ * Permanently removes every report for the given actions — used by
+ * `demoteOrganizerToVolunteer`. Never touches reports for any other
+ * action.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteReportsByActionIds(actionIds) {
+  if (!actionIds.length) return
+  const records = readReports()
+  const remaining = records.filter((record) => !actionIds.includes(record.actionId))
+  if (remaining.length !== records.length) writeReports(remaining)
+}

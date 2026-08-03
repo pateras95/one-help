@@ -1,7 +1,12 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
-import { getUsers, suspendUser as suspendUserRequest, reactivateUser as reactivateUserRequest } from '../services/adminUsers.service'
+import {
+  getUsers,
+  suspendUser as suspendUserRequest,
+  reactivateUser as reactivateUserRequest,
+  updateUserProfile as updateUserProfileRequest
+} from '../services/adminUsers.service'
 
 /** Owns the admin user-management list and its suspend/reactivate actions. */
 export const useAdminUsersStore = defineStore('adminUsers', () => {
@@ -42,5 +47,12 @@ export const useAdminUsersStore = defineStore('adminUsers', () => {
     return updated
   }
 
-  return { users, loading, error, fetchUsers, suspendUser, reactivateUser }
+  async function updateUserProfile(targetUserId, payload) {
+    const updated = await updateUserProfileRequest(currentAdminId(), targetUserId, payload)
+    const index = users.value.findIndex((user) => user.id === targetUserId)
+    if (index !== -1) users.value[index] = updated
+    return updated
+  }
+
+  return { users, loading, error, fetchUsers, suspendUser, reactivateUser, updateUserProfile }
 })

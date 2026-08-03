@@ -1,6 +1,7 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
@@ -9,7 +10,17 @@ import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
+import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { localizeField } from '@/features/organizer/utils/localizeField'
+import { getAllUsers } from '@/features/auth/services/auth.service'
+import { getOrganizerActions } from '@/features/organizer/services/organizerActions.service'
+import { isActionPubliclyVisible } from '@/features/actions/utils/actionVisibility'
+import { matchesSearchQuery } from '@/utils/normalizeSearchText'
+import { getOrganizationType } from '@/constants/organizationTypes'
+import { demoteOrganizerToVolunteer } from '@/features/organizerApplication/services/organizerDemotion.service'
+import OrganizerDemotionConfirmDialog from '@/features/organizerApplication/components/OrganizerDemotionConfirmDialog.vue'
+import OrganizationApplicationForm from '@/features/organizerApplication/components/OrganizationApplicationForm.vue'
+import { applicationErrorKey } from '@/features/organizerApplication/utils/applicationErrors'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
 import AdminConfirmDialog from '../components/AdminConfirmDialog.vue'
@@ -18,13 +29,39 @@ import { ORGANIZATION_STATUS } from '../utils/organizationStatus'
 import { adminErrorKey } from '../utils/adminErrors'
 
 const { t, locale } = useI18n()
+const route = useRoute()
+const authStore = useAuthStore()
 const organizationsStore = useAdminOrganizationsStore()
 const notificationsStore = useNotificationsStore()
 
-onMounted(organizationsStore.fetchOrganizations)
+const usersById = ref({})
+const actionCountsByOrganizerId = ref({})
+
+async function loadJoins() {
+  const users = await getAllUsers()
+  usersById.value = Object.fromEntries(users.map((user) => [user.id, user]))
+
+  const entries = await Promise.all(
+    organizationsStore.organizations.map(async (org) => {
+      const actions = await getOrganizerActions(org.organizerUserId)
+      const publicCount = actions.filter(isActionPubliclyVisible).length
+      return [org.organizerUserId, { total: actions.length, public: publicCount, hidden: actions.length - publicCount }]
+    })
+  )
+  actionCountsByOrganizerId.value = Object.fromEntries(entries)
+}
+
+onMounted(async () => {
+  await organizationsStore.fetchOrganizations()
+  await loadJoins()
+})
+
+const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
 
 const viewDialog = ref({ open: false, organization: null })
 const actionDialog = ref({ open: false, organization: null, action: null, loading: false })
+const editDialog = ref({ open: false, organization: null, saving: false })
+const demotionDialog = ref({ open: false, organization: null, loading: false })
 
 const STATUS_CHIP = {
   [ORGANIZATION_STATUS.PENDING]: { color: 'warning', icon: 'mdi-clock-outline' },
@@ -39,6 +76,16 @@ function name(org) {
 function description(org) {
   return localizeField(org.description, locale.value)
 }
+function organizerUser(org) {
+  return usersById.value[org.organizerUserId] ?? null
+}
+function organizerName(org) {
+  const user = organizerUser(org)
+  return user ? `${user.firstName} ${user.lastName}` : ''
+}
+function counts(org) {
+  return actionCountsByOrganizerId.value[org.organizerUserId] ?? { total: 0, public: 0, hidden: 0 }
+}
 
 function formatDate(isoString) {
   if (!isoString) return ''
@@ -49,6 +96,20 @@ function formatDate(isoString) {
   })
   return formatter.format(new Date(isoString))
 }
+
+const filteredOrganizations = computed(() => {
+  return organizationsStore.organizations.filter((org) => {
+    const type = getOrganizationType(org.organizationType)
+    return matchesSearchQuery(searchQuery.value, [
+      name(org),
+      organizerName(org),
+      organizerUser(org)?.email ?? '',
+      type ? t(type.labelKey) : '',
+      org.municipality ?? '',
+      t(`admin.organizationStatus.${org.status}`)
+    ])
+  })
+})
 
 function openView(org) {
   viewDialog.value = { open: true, organization: org }
@@ -79,9 +140,48 @@ async function handleConfirm(reason) {
       notificationsStore.notify(t('admin.organizations.notifications.restoreSuccess', { name: name(organization) }), { type: 'success' })
     }
     closeAction()
+    await loadJoins()
   } catch (err) {
     notificationsStore.notify(t(adminErrorKey(err.message)), { type: 'error' })
     closeAction()
+  }
+}
+
+function openEdit(org) {
+  editDialog.value = { open: true, organization: org, saving: false }
+}
+function closeEdit() {
+  editDialog.value = { ...editDialog.value, open: false }
+}
+
+async function handleEditSave(payload) {
+  editDialog.value = { ...editDialog.value, saving: true }
+  try {
+    await organizationsStore.updateOrganizationDetails(editDialog.value.organization.id, payload)
+    notificationsStore.notify(t('admin.organizations.notifications.editSuccess', { name: payload.name }), { type: 'success' })
+    closeEdit()
+  } catch (err) {
+    notificationsStore.notify(t(applicationErrorKey(err.message)), { type: 'error' })
+    editDialog.value = { ...editDialog.value, saving: false }
+  }
+}
+
+function openDemotion(org) {
+  demotionDialog.value = { open: true, organization: org, loading: false }
+}
+
+async function handleDemote() {
+  const org = demotionDialog.value.organization
+  demotionDialog.value = { ...demotionDialog.value, loading: true }
+  try {
+    await demoteOrganizerToVolunteer(org.organizerUserId, authStore.currentUser.id)
+    notificationsStore.notify(t('admin.organizations.notifications.removeSuccess', { name: name(org) }), { type: 'success' })
+    demotionDialog.value = { open: false, organization: null, loading: false }
+    organizationsStore.remove(org.id)
+    await loadJoins()
+  } catch (err) {
+    notificationsStore.notify(t(applicationErrorKey(err.message)), { type: 'error' })
+    demotionDialog.value = { ...demotionDialog.value, loading: false }
   }
 }
 
@@ -102,12 +202,29 @@ const confirmMessage = computed(() => {
 })
 const confirmColor = computed(() => (actionDialog.value.action ? actionCopy[actionDialog.value.action].color : 'primary'))
 const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organizations.actions.${actionDialog.value.action}`) : ''))
+
+const editInitialApplication = computed(() => editDialog.value.organization)
+const editSaveLabel = computed(() => t('admin.organizations.editDialog.saveAction'))
 </script>
 
 <template>
   <DefaultLayout>
     <OHPageHeader :title="t('admin.organizations.pageTitle')" :subtitle="t('admin.organizations.subtitle')" />
     <AdminNavTabs />
+
+    <VTextField
+      v-model="searchQuery"
+      class="mb-2"
+      :label="t('admin.organizations.search.label')"
+      prepend-inner-icon="mdi-magnify"
+      variant="outlined"
+      density="comfortable"
+      clearable
+      hide-details
+    />
+    <p v-if="!organizationsStore.loading && !organizationsStore.error" class="text-caption text-textSecondary mb-4">
+      {{ t('admin.organizations.search.resultCount', { count: filteredOrganizations.length }) }}
+    </p>
 
     <LoadingState v-if="organizationsStore.loading" :label="t('admin.common.loading')" />
 
@@ -125,8 +242,15 @@ const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organi
       icon="mdi-domain"
     />
 
+    <EmptyState
+      v-else-if="filteredOrganizations.length === 0"
+      :title="t('admin.organizations.search.noResultsTitle')"
+      :message="t('admin.organizations.search.noResultsMessage')"
+      icon="mdi-magnify"
+    />
+
     <VRow v-else>
-      <VCol v-for="org in organizationsStore.organizations" :key="org.id" cols="12" sm="6" md="4">
+      <VCol v-for="org in filteredOrganizations" :key="org.id" cols="12" sm="6" md="4">
         <OHCard class="pa-4 h-100 d-flex flex-column">
           <div class="d-flex align-center justify-space-between ga-2 mb-2">
             <AdminStatusChip
@@ -137,13 +261,19 @@ const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organi
           </div>
           <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ name(org) }}</h3>
           <p class="text-body-2 text-textSecondary oh-org-card__description mb-2">{{ description(org) }}</p>
+          <p class="text-caption text-textSecondary mb-1">
+            {{ t('admin.organizations.ownerLabel') }}: {{ organizerName(org) }} ({{ organizerUser(org)?.email }})
+          </p>
           <p class="text-caption text-textSecondary mb-3">
-            {{ t('admin.organizations.submittedAt', { date: formatDate(org.submittedAt) }) }}
+            {{ t('admin.organizations.actionCounts', { total: counts(org).total, public: counts(org).public, hidden: counts(org).hidden }) }}
           </p>
 
           <div class="d-flex flex-wrap ga-2 mt-auto">
             <OHButton size="small" variant="text" prepend-icon="mdi-eye-outline" @click="openView(org)">
               {{ t('admin.common.view') }}
+            </OHButton>
+            <OHButton size="small" variant="text" prepend-icon="mdi-pencil-outline" @click="openEdit(org)">
+              {{ t('admin.common.edit') }}
             </OHButton>
             <OHButton
               v-if="org.status === ORGANIZATION_STATUS.PENDING"
@@ -181,6 +311,9 @@ const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organi
             >
               {{ t('admin.organizations.actions.restore') }}
             </OHButton>
+            <OHButton size="small" variant="text" color="error" prepend-icon="mdi-delete-outline" @click="openDemotion(org)">
+              {{ t('admin.organizations.removeOrganizerAction') }}
+            </OHButton>
           </div>
         </OHCard>
       </VCol>
@@ -214,6 +347,24 @@ const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organi
       </VCard>
     </VDialog>
 
+    <VDialog :model-value="editDialog.open" max-width="720" scrollable @update:model-value="closeEdit">
+      <VCard v-if="editDialog.organization">
+        <VCardTitle>{{ t('admin.organizations.editDialog.title', { name: name(editDialog.organization) }) }}</VCardTitle>
+        <VCardText>
+          <OrganizationApplicationForm
+            :initial-application="editInitialApplication"
+            :submitting="editDialog.saving"
+            :submit-label="editSaveLabel"
+            @submit="handleEditSave"
+          />
+        </VCardText>
+        <VCardActions>
+          <VSpacer />
+          <VBtn variant="text" :disabled="editDialog.saving" @click="closeEdit">{{ t('admin.common.cancel') }}</VBtn>
+        </VCardActions>
+      </VCard>
+    </VDialog>
+
     <AdminConfirmDialog
       v-model="actionDialog.open"
       :title="confirmTitle"
@@ -224,6 +375,13 @@ const confirmLabel = computed(() => (actionDialog.value.action ? t(`admin.organi
       :reason-label="actionDialog.action === 'reject' ? t('admin.organizations.rejectDialog.reasonLabel') : ''"
       :reason-required="actionDialog.action === 'reject'"
       @confirm="handleConfirm"
+    />
+
+    <OrganizerDemotionConfirmDialog
+      v-model="demotionDialog.open"
+      :organization-name="demotionDialog.organization ? name(demotionDialog.organization) : ''"
+      :loading="demotionDialog.loading"
+      @confirm="handleDemote"
     />
   </DefaultLayout>
 </template>

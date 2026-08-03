@@ -1,11 +1,14 @@
 import { mockResponse } from '@/utils/mockResponse'
-import { getMergedActions } from '@/features/organizer/mocks/organizerActions.storage'
+import { getMergedActions, upsertOrganizerAction } from '@/features/organizer/mocks/organizerActions.storage'
 import { getModerationRecord, setModerationStatus } from '../mocks/actionModeration.storage'
 import { getOrganizationByOrganizerId } from '../mocks/organizations.storage'
 import { logActivity } from '../mocks/activityLog.storage'
 import { ACTION_MODERATION_STATUS, canTransitionModeration } from '../utils/actionModerationStatus'
 import { ACTIVITY_ACTION_TYPE, ACTIVITY_TARGET_TYPE } from '../utils/activityLogTypes'
 import { ADMIN_ERROR } from '../utils/adminErrors'
+import { validatePayload as validateActionPayload } from '@/features/organizer/services/organizerActions.service'
+import { canTransition as canTransitionOrganizerStatus } from '@/features/organizer/utils/organizerActionStatus'
+import { getLocalConfirmedCount } from '@/features/participation/utils/participationCount'
 
 /**
  * Decorates a raw merged action (organizer lifecycle only) with its
@@ -177,4 +180,73 @@ export async function restoreAction(adminUserId, actionId) {
     metadata: { title: action.title.en }
   })
   return mockResponse(decorate(action))
+}
+
+/**
+ * Edits an action's own content fields from the admin side (title,
+ * description, category, date/time, location, capacity, urgency,
+ * required equipment, and optionally its organizer lifecycle status) —
+ * reuses the exact same field validation the organizer's own edit form
+ * uses, so an admin edit can never produce a record the organizer-facing
+ * form would itself reject. Moderation status is untouched here — it
+ * only ever changes via `approveAction`/`rejectAction`/`hideAction`/
+ * `restoreAction` above, kept deliberately separate from lifecycle
+ * status.
+ *
+ * @param {string} adminUserId
+ * @param {string} actionId
+ * @param {Object} payload - Same shape as the organizer's own edit form,
+ *   plus an optional `organizerStatus` to change lifecycle status.
+ * @returns {Promise<Object>}
+ */
+export async function updateActionDetails(adminUserId, actionId, payload) {
+  if (!adminUserId || !actionId) {
+    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+  }
+  const existing = findAction(actionId)
+  if (!existing) {
+    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
+  }
+
+  const validationError = validateActionPayload(payload)
+  if (validationError) {
+    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
+  }
+
+  const confirmedCount = existing.registeredCount + getLocalConfirmedCount(actionId)
+  if (payload.capacity < confirmedCount) {
+    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.CAPACITY_BELOW_CONFIRMED })
+  }
+
+  let nextStatus = existing.organizerStatus
+  if (payload.organizerStatus && payload.organizerStatus !== existing.organizerStatus) {
+    if (!canTransitionOrganizerStatus(existing.organizerStatus, payload.organizerStatus)) {
+      return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_TRANSITION })
+    }
+    nextStatus = payload.organizerStatus
+  }
+
+  const municipalityText = payload.municipality.trim()
+  const updated = {
+    ...existing,
+    organizerStatus: nextStatus,
+    categoryId: payload.categoryId,
+    title: { el: payload.title.el.trim(), en: payload.title.en.trim() },
+    description: { el: payload.description.el.trim(), en: payload.description.en.trim() },
+    locationName: { el: payload.locationName.el.trim(), en: payload.locationName.en.trim() },
+    municipality: { el: municipalityText, en: municipalityText },
+    latitude: payload.latitude ?? null,
+    longitude: payload.longitude ?? null,
+    date: payload.date,
+    startTime: payload.startTime,
+    capacity: payload.capacity,
+    urgency: payload.urgency,
+    requiredEquipment: {
+      el: payload.requiredEquipment.el.filter(Boolean),
+      en: payload.requiredEquipment.en.filter(Boolean)
+    }
+  }
+
+  upsertOrganizerAction(updated)
+  return mockResponse(decorate(updated))
 }

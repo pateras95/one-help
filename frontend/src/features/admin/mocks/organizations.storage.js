@@ -2,6 +2,7 @@ import { MOCK_ORGANIZATIONS } from './organizations.mock'
 import { ORGANIZATION_STATUS } from '../utils/organizationStatus'
 
 const STORAGE_KEY = 'onehelp.admin.organizations'
+const DELETED_IDS_STORAGE_KEY = 'onehelp.admin.organizations.deletedIds'
 
 function isValidRecord(record) {
   return Boolean(
@@ -85,10 +86,62 @@ export function upsertOrganization(record) {
 }
 
 /**
+ * Reads the set of permanently-deleted organization ids (via
+ * `demoteOrganizerToVolunteer`). The base fixture array is immutable in
+ * memory, so a fixture organization can only ever be "deleted" by being
+ * excluded here — this tombstone is consulted by `getMergedOrganizations()`.
+ *
+ * @returns {Array<string>}
+ */
+export function readDeletedOrganizationIds() {
+  let raw
+  try {
+    raw = window.localStorage.getItem(DELETED_IDS_STORAGE_KEY)
+  } catch {
+    return []
+  }
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** @param {Array<string>} ids */
+function writeDeletedOrganizationIds(ids) {
+  try {
+    window.localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Ignore write failures, same as every other mock store.
+  }
+}
+
+/**
+ * Permanently removes an organization: tombstones its id (so it never
+ * resurfaces from the base fixture) and drops any persisted override
+ * for it. Used only by `demoteOrganizerToVolunteer`.
+ *
+ * @param {string} organizationId
+ */
+export function markOrganizationDeleted(organizationId) {
+  const deletedIds = readDeletedOrganizationIds()
+  if (!deletedIds.includes(organizationId)) {
+    writeDeletedOrganizationIds([...deletedIds, organizationId])
+  }
+
+  const records = readOrganizations()
+  const remaining = records.filter((record) => record.id !== organizationId)
+  if (remaining.length !== records.length) writeOrganizations(remaining)
+}
+
+/**
  * The canonical "all organizations" list: the immutable base fixture
  * with any persisted admin decision applied on top (by id), plus any
  * wholly new organizations (real user applications submitted through
- * "Become an organizer") appended. Mirrors `organizerActions.storage.js`'s
+ * "Become an organizer") appended, minus anything permanently deleted
+ * via `demoteOrganizerToVolunteer`. Mirrors `organizerActions.storage.js`'s
  * `getMergedActions()` pattern exactly.
  *
  * @returns {Array<Object>}
@@ -97,6 +150,7 @@ export function getMergedOrganizations() {
   const stored = readOrganizations()
   const overrides = new Map(stored.map((record) => [record.id, record]))
   const baseIds = new Set(MOCK_ORGANIZATIONS.map((org) => org.id))
+  const deletedIds = new Set(readDeletedOrganizationIds())
 
   const merged = MOCK_ORGANIZATIONS.map((org) => {
     const override = overrides.get(org.id)
@@ -105,7 +159,30 @@ export function getMergedOrganizations() {
 
   const created = stored.filter((record) => !baseIds.has(record.id))
 
-  return [...merged, ...created]
+  return [...merged, ...created].filter((org) => !deletedIds.has(org.id))
+}
+
+/**
+ * Whether a localized organization name is already in use by another
+ * organization (case-insensitive) — checked in both locales, since a
+ * single organization can't reuse either of its own translated names.
+ *
+ * @param {{el: string, en: string}} name
+ * @param {string} [excludeOrganizationId] - Skip this organization (the
+ *   one currently being edited) when checking for a clash.
+ * @returns {boolean}
+ */
+export function isOrganizationNameTaken(name, excludeOrganizationId) {
+  const elQuery = name?.el?.trim().toLowerCase()
+  const enQuery = name?.en?.trim().toLowerCase()
+  if (!elQuery && !enQuery) return false
+
+  return getMergedOrganizations().some((org) => {
+    if (org.id === excludeOrganizationId) return false
+    const existingEl = org.name?.el?.trim().toLowerCase()
+    const existingEn = org.name?.en?.trim().toLowerCase()
+    return (elQuery && existingEl === elQuery) || (enQuery && existingEn === enQuery)
+  })
 }
 
 /**

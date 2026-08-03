@@ -1,23 +1,21 @@
 import { ORGANIZATION_STATUS } from '@/features/admin/utils/organizationStatus'
 
 /**
- * A membership's role within an organization. Only `OWNER` has a real
- * flow in this MVP (one owner per organization, granted automatically
- * on admin approval) — `MANAGER` is reserved for a future multi-manager
- * feature and must not be exposed in any UI yet, same convention as
- * `ROLES.MODERATOR` being reserved-but-unexposed.
+ * A membership's role within an organization. `OWNER` is the only role
+ * that will ever exist — one organizer owns exactly one organization,
+ * and one organization has exactly one organizer, permanently. This
+ * project will never support additional managers, invitations, or
+ * organization teams (see CLAUDE.md's "Permanent organization ownership
+ * rule").
  */
 export const MEMBERSHIP_ROLE = {
-  OWNER: 'owner',
-  MANAGER: 'manager'
+  OWNER: 'owner'
 }
 
 /**
  * A membership's own standing — deliberately reuses `ORGANIZATION_STATUS`
  * rather than introducing a second, incompatible approval-status
- * vocabulary. In this MVP a membership's status always mirrors its
- * organization's status (approved ↔ suspended), which is exactly what
- * lets a future multi-manager feature give one member a different
- * standing than another without changing this shared vocabulary.
+ * vocabulary. A membership's status always mirrors its organization's
+ * status (approved ↔ suspended).
  */
 export const MEMBERSHIP_STATUS = ORGANIZATION_STATUS

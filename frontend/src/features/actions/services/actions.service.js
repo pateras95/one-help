@@ -1,8 +1,30 @@
 import { mockResponse } from '@/utils/mockResponse'
 import { startOfDay, isPastDate } from '@/utils/date'
 import { getMergedActions } from '@/features/organizer/mocks/organizerActions.storage'
+import { getOrganizationByOrganizerId } from '@/features/admin/mocks/organizations.storage'
 import { ORGANIZER_ACTION_STATUS } from '@/features/organizer/utils/organizerActionStatus'
 import { isActionPubliclyVisible } from '../utils/actionVisibility'
+
+/**
+ * Public-safe organization details for Action Details' "About the
+ * organization" section — resolved via the action's `organizerId`
+ * (never itself exposed to the client, same as before this field
+ * existed). `null` for the rare case an action's organizer has no
+ * resolvable organization record.
+ */
+function buildOrganizationDetails(action, lang) {
+  const organization = getOrganizationByOrganizerId(action.organizerId)
+  if (!organization) return null
+  return {
+    name: organization.name[lang] ?? organization.name.el,
+    organizationType: organization.organizationType ?? null,
+    description: organization.description[lang] ?? organization.description.el,
+    contactEmail: organization.contactEmail,
+    phone: organization.phone ?? null,
+    website: organization.website ?? null,
+    municipality: organization.municipality ?? null
+  }
+}
 
 /**
  * Derives the public-facing status from the organizer lifecycle status
@@ -37,7 +59,8 @@ function localizeAction(action, locale) {
     registeredCount: action.registeredCount,
     urgency: action.urgency,
     requiredEquipment: action.requiredEquipment[lang] ?? action.requiredEquipment.el,
-    status: computeStatus(action)
+    status: computeStatus(action),
+    organizationDetails: buildOrganizationDetails(action, lang)
   }
 }
 

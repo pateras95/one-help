@@ -195,6 +195,32 @@ watch(() => route.params.actionId, load)
             </span>
           </OHCard>
 
+          <OHCard v-if="displayAction.organizationDetails" class="pa-5 mt-4">
+            <h2 class="text-subtitle-2 font-weight-bold mb-3">{{ t('actions.details.organizationTitle') }}</h2>
+            <p class="font-weight-bold mb-1">{{ displayAction.organizationDetails.name }}</p>
+            <p v-if="displayAction.organizationDetails.organizationType" class="text-caption text-textSecondary mb-3">
+              {{ t(`organizationTypes.${displayAction.organizationDetails.organizationType}`) }}
+            </p>
+            <p class="text-body-2 text-textSecondary mb-3">{{ displayAction.organizationDetails.description }}</p>
+
+            <div class="d-flex align-center ga-2 text-body-2 text-textSecondary mb-1">
+              <VIcon icon="mdi-email-outline" aria-hidden="true" />
+              <a :href="`mailto:${displayAction.organizationDetails.contactEmail}`">{{ displayAction.organizationDetails.contactEmail }}</a>
+            </div>
+            <div v-if="displayAction.organizationDetails.phone" class="d-flex align-center ga-2 text-body-2 text-textSecondary mb-1">
+              <VIcon icon="mdi-phone-outline" aria-hidden="true" />
+              <span>{{ displayAction.organizationDetails.phone }}</span>
+            </div>
+            <div v-if="displayAction.organizationDetails.website" class="d-flex align-center ga-2 text-body-2 text-textSecondary mb-1">
+              <VIcon icon="mdi-web" aria-hidden="true" />
+              <a :href="displayAction.organizationDetails.website" target="_blank" rel="noopener noreferrer">{{ displayAction.organizationDetails.website }}</a>
+            </div>
+            <div v-if="displayAction.organizationDetails.municipality" class="d-flex align-center ga-2 text-body-2 text-textSecondary">
+              <VIcon icon="mdi-map-marker-outline" aria-hidden="true" />
+              <span>{{ displayAction.organizationDetails.municipality }}</span>
+            </div>
+          </OHCard>
+
           <ReportActionCard :action-id="displayAction.id" class="mt-4" />
         </VCol>
       </VRow>

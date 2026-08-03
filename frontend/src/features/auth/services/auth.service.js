@@ -5,6 +5,7 @@ import { DEFAULT_LOCALE } from '@/constants/locales'
 import { getUserStatus } from '@/features/admin/mocks/userStatus.storage'
 import { ACCOUNT_STATUS } from '@/features/admin/utils/accountStatus'
 import { getUserRoleOverride } from '../mocks/userRole.storage'
+import { getUserProfileOverride } from '../mocks/userProfileOverride.storage'
 
 /**
  * In-memory copy of the fixtures — registrations are added here, never to
@@ -28,11 +29,14 @@ function normalizeEmail(email) {
  * here too before it's ever returned to the UI.
  */
 function sanitizeUser(user) {
+  // An admin edit to name/email overrides the base fixture — same
+  // persisted-overlay reasoning as role/status below.
+  const profileOverride = getUserProfileOverride(user.id)
   return {
     id: user.id,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    email: user.email,
+    firstName: profileOverride?.firstName ?? user.firstName,
+    lastName: profileOverride?.lastName ?? user.lastName,
+    email: profileOverride?.email ?? user.email,
     // A successful organizer application overrides the base fixture's
     // role — see `mocks/userRole.storage.js` for why this needs its own
     // persisted overlay rather than mutating `usersDb` directly.

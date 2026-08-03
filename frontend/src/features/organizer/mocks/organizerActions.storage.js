@@ -2,6 +2,7 @@ import { MOCK_ACTIONS } from '@/features/actions/mocks/actions.mock'
 import { ORGANIZER_ACTION_STATUS } from '../utils/organizerActionStatus'
 
 const STORAGE_KEY = 'onehelp.organizer.actions'
+const DELETED_IDS_STORAGE_KEY = 'onehelp.organizer.actions.deletedIds'
 
 function isValidRecord(record) {
   return Boolean(
@@ -89,9 +90,61 @@ export function upsertOrganizerAction(record) {
 }
 
 /**
+ * Reads the set of permanently-deleted action ids (via
+ * `demoteOrganizerToVolunteer`). The base fixture array is immutable in
+ * memory, so a fixture action can only ever be "deleted" by being
+ * excluded here — this tombstone is consulted by `getMergedActions()`.
+ *
+ * @returns {Array<string>}
+ */
+export function readDeletedActionIds() {
+  let raw
+  try {
+    raw = window.localStorage.getItem(DELETED_IDS_STORAGE_KEY)
+  } catch {
+    return []
+  }
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
+/** @param {Array<string>} ids */
+function writeDeletedActionIds(ids) {
+  try {
+    window.localStorage.setItem(DELETED_IDS_STORAGE_KEY, JSON.stringify(ids))
+  } catch {
+    // Ignore write failures, same as every other mock store.
+  }
+}
+
+/**
+ * Permanently removes a set of actions: tombstones their ids (so they
+ * never resurface from the base fixture) and drops any persisted
+ * override for them. Used only by `demoteOrganizerToVolunteer`.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteActionsByIds(actionIds) {
+  if (!actionIds.length) return
+  const deletedIds = readDeletedActionIds()
+  const nextDeletedIds = new Set([...deletedIds, ...actionIds])
+  writeDeletedActionIds([...nextDeletedIds])
+
+  const records = readOrganizerActions()
+  const remaining = records.filter((record) => !actionIds.includes(record.id))
+  if (remaining.length !== records.length) writeOrganizerActions(remaining)
+}
+
+/**
  * The canonical "all actions" list: the immutable base fixture with any
  * persisted organizer edits applied on top (by id), plus any wholly new
- * organizer-created actions appended. Never mutates `MOCK_ACTIONS` —
+ * organizer-created actions appended, minus anything permanently
+ * deleted via `demoteOrganizerToVolunteer`. Never mutates `MOCK_ACTIONS` —
  * both the public Actions feature and the organizer feature read
  * through this instead of `MOCK_ACTIONS` directly, so an organizer's
  * create/edit is immediately visible to both.
@@ -101,6 +154,7 @@ export function upsertOrganizerAction(record) {
 export function getMergedActions() {
   const overrides = new Map(readOrganizerActions().map((record) => [record.id, record]))
   const baseIds = new Set(MOCK_ACTIONS.map((action) => action.id))
+  const deletedIds = new Set(readDeletedActionIds())
 
   const merged = MOCK_ACTIONS.map((action) => {
     const override = overrides.get(action.id)
@@ -109,5 +163,5 @@ export function getMergedActions() {
 
   const created = readOrganizerActions().filter((record) => !baseIds.has(record.id))
 
-  return [...merged, ...created]
+  return [...merged, ...created].filter((action) => !deletedIds.has(action.id))
 }

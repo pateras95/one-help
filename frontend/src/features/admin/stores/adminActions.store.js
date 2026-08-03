@@ -6,7 +6,8 @@ import {
   approveAction as approveActionRequest,
   rejectAction as rejectActionRequest,
   hideAction as hideActionRequest,
-  restoreAction as restoreActionRequest
+  restoreAction as restoreActionRequest,
+  updateActionDetails as updateActionDetailsRequest
 } from '../services/actionModeration.service'
 
 /** Owns the admin action-moderation list and its approve/reject/hide/restore actions. */
@@ -63,5 +64,21 @@ export const useAdminActionsStore = defineStore('adminActions', () => {
     return updated
   }
 
-  return { actions, loading, error, fetchActions, approveAction, rejectAction, hideAction, restoreAction }
+  async function updateActionDetails(actionId, payload) {
+    const updated = await updateActionDetailsRequest(currentAdminId(), actionId, payload)
+    replace(updated)
+    return updated
+  }
+
+  return {
+    actions,
+    loading,
+    error,
+    fetchActions,
+    approveAction,
+    rejectAction,
+    hideAction,
+    restoreAction,
+    updateActionDetails
+  }
 })

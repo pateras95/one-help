@@ -36,8 +36,13 @@ function hasValidOptionalCoordinates(payload) {
   )
 }
 
-/** Validates a create/edit form payload, returning an error code or `null`. */
-function validatePayload(payload) {
+/**
+ * Validates a create/edit form payload, returning an error code or
+ * `null`. Exported so the admin action-edit flow (`actionModeration.
+ * service.js`) can reuse the exact same field rules rather than
+ * re-implementing them.
+ */
+export function validatePayload(payload) {
   if (!payload) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
   if (!isValidCategoryId(payload.categoryId)) return ORGANIZER_ACTION_ERROR.INVALID_CATEGORY
   if (!isValidBilingualText(payload.title)) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST

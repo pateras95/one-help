@@ -84,14 +84,21 @@ export function getMembershipByUserId(userId) {
 /**
  * Creates the owner membership for a newly approved organization. A
  * no-op safeguard if one somehow already exists for this organization
- * (upserts rather than duplicating).
+ * (upserts rather than duplicating). Also drops any *other* membership
+ * this user might hold for a different organization first — one
+ * organizer can own exactly one organization, permanently (see
+ * CLAUDE.md's "Permanent organization ownership rule"), so this is a
+ * defense-in-depth guard alongside the application-submission check
+ * that already blocks applying for a second organization.
  *
  * @param {string} organizationId
  * @param {string} userId
  * @returns {Object}
  */
 export function createOwnerMembership(organizationId, userId) {
-  const records = readMemberships()
+  const records = readMemberships().filter(
+    (record) => record.userId !== userId || record.organizationId === organizationId
+  )
   const index = records.findIndex((record) => record.organizationId === organizationId)
   const now = new Date().toISOString()
   const entry = index === -1
@@ -114,10 +121,8 @@ export function createOwnerMembership(organizationId, userId) {
 }
 
 /**
- * Mirrors an organization's status onto its membership record(s) — used
- * when an organization is suspended/restored, so a future multi-manager
- * feature can already tell "this specific membership is suspended"
- * without re-deriving it from the organization every time.
+ * Mirrors an organization's status onto its membership record — used
+ * when an organization is suspended/restored.
  *
  * @param {string} organizationId
  * @param {string} status - One of `MEMBERSHIP_STATUS`.
@@ -129,4 +134,16 @@ export function setMembershipStatusForOrganization(organizationId, status) {
   records[index] = { ...records[index], status }
   writeMemberships(records)
   return records[index]
+}
+
+/**
+ * Permanently removes the ownership record for an organization —
+ * used by `demoteOrganizerToVolunteer` when an organization is deleted.
+ *
+ * @param {string} organizationId
+ */
+export function deleteMembershipByOrganizationId(organizationId) {
+  const records = readMemberships()
+  const remaining = records.filter((record) => record.organizationId !== organizationId)
+  if (remaining.length !== records.length) writeMemberships(remaining)
 }

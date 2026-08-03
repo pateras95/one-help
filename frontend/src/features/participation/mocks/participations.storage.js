@@ -63,3 +63,17 @@ export function writeParticipations(records) {
     // for the app to function (same approach as the auth/locale stores).
   }
 }
+
+/**
+ * Permanently removes every participation for the given actions — used
+ * by `demoteOrganizerToVolunteer` when an organizer's actions are
+ * deleted. Never touches participations for any other action.
+ *
+ * @param {Array<string>} actionIds
+ */
+export function deleteParticipationsByActionIds(actionIds) {
+  if (!actionIds.length) return
+  const records = readParticipations()
+  const remaining = records.filter((record) => !actionIds.includes(record.actionId))
+  if (remaining.length !== records.length) writeParticipations(remaining)
+}

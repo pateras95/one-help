@@ -15,7 +15,9 @@ export const APPLICATION_ERROR = {
   INVALID_WEBSITE: 'invalidWebsite',
   INVALID_CATEGORIES: 'invalidCategories',
   TERMS_NOT_ACCEPTED: 'termsNotAccepted',
-  SUSPENDED: 'suspended'
+  SUSPENDED: 'suspended',
+  DUPLICATE_NAME: 'duplicateName',
+  NOT_ORGANIZER: 'notOrganizer'
 }
 
 const KNOWN_CODES = new Set(Object.values(APPLICATION_ERROR))

@@ -11,6 +11,7 @@ export default {
   myActionsMobile: 'Συμμετοχές',
   checkIn: 'Check-in',
   organizerArea: 'Περιοχή διοργανωτή',
+  myOrganization: 'Η οργάνωσή μου',
   becomeOrganizer: 'Γίνε διοργανωτής',
   applicationStatus: 'Κατάσταση αίτησης',
   admin: 'Διαχείριση',

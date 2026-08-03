@@ -41,6 +41,29 @@ Rules for these excluded features:
 * Do not add dependencies that exist primarily to support them (e.g. PDF generation, spreadsheet export, payment SDKs).
 * If a future request explicitly asks for one of these, point back to this section rather than implementing it, and ask the user to confirm they want to permanently change project scope before proceeding.
 
+## Permanent organization ownership rule
+
+The relationship between an organizer and an organization is permanently one-to-one:
+
+* One organizer (user) owns exactly one organization.
+* One organization has exactly one organizer.
+
+This project will never support, in any phase:
+
+* Multiple organizers per organization
+* Manager invitations
+* Additional organization managers or team members
+* Organization teams of any kind
+* One organizer owning multiple organizations
+
+Rules for this permanent constraint:
+
+* Do not implement, stub, or route toward any of the above, even partially or behind a flag.
+* Do not reserve enum values, fields, or comments implying a future multi-manager/multi-organizer feature.
+* Do not propose any of the above in a "Suggested Next Feature" section or any other forward-looking note.
+* A user becomes an organizer only by submitting an organization application that an administrator approves. An organizer only ever reverts to a volunteer through the central demotion operation (`demoteOrganizerToVolunteer`) — never a direct role edit.
+* If a future request explicitly asks for one of these, point back to this section rather than implementing it, and ask the user to confirm they want to permanently change project scope before proceeding.
+
 ## Technology stack
 
 Use:

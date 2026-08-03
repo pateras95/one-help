@@ -3,6 +3,7 @@ export default {
     title: 'Organizer area',
     subtitle: 'Manage the actions you have created.',
     createAction: 'Create action',
+    myOrganization: 'My organization',
     sectionTitle: 'Your actions',
     summary: {
       totalActions: 'Total actions',
@@ -15,6 +16,26 @@ export default {
     errorMessage: 'Please try again shortly.',
     emptyTitle: "You haven't created any actions yet",
     emptyMessage: 'Create your first action so volunteers can find it.'
+  },
+  organization: {
+    pageTitle: 'My organization',
+    subtitle: 'View and edit your organization\'s details.',
+    loading: 'Loading organization details...',
+    statusSectionTitle: 'Status',
+    statusLabel: 'Approval status',
+    ownerLabel: 'Organizer',
+    submittedLabel: 'Submitted',
+    reviewedLabel: 'Last reviewed',
+    suspendedNotice: 'Your organization is currently suspended. You can still update your contact/profile details, but you cannot create or publish actions until it is restored.',
+    editSectionTitle: 'Organization details',
+    saveButton: 'Save changes',
+    dangerZoneTitle: 'Danger zone',
+    dangerZoneMessage: 'Becoming a volunteer again will permanently remove the organization "{name}" and all of its related data.',
+    becomeVolunteerAction: 'Become a volunteer again',
+    notifications: {
+      saveSuccess: 'The organization details were updated.',
+      demoteSuccess: 'The organization "{name}" was removed. You are now a volunteer.'
+    }
   },
   status: {
     draft: 'Draft',

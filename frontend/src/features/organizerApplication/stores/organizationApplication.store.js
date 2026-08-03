@@ -6,7 +6,8 @@ import {
   getUserOrganizationMembership,
   submitOrganizationApplication as submitRequest,
   updatePendingApplication as updateRequest,
-  resubmitRejectedApplication as resubmitRequest
+  resubmitRejectedApplication as resubmitRequest,
+  updateOrganizationProfile as updateProfileRequest
 } from '../services/organizationApplication.service'
 
 /**
@@ -76,6 +77,14 @@ export const useOrganizationApplicationStore = defineStore('organizationApplicat
     return result
   }
 
+  async function updateProfile(payload) {
+    const userId = currentUserId()
+    if (!userId) throw new Error('invalidRequest')
+    const result = await updateProfileRequest(userId, payload)
+    application.value = result
+    return result
+  }
+
   /** Clears in-memory state (e.g. on logout) — persisted data is untouched. */
   function clear() {
     application.value = null
@@ -92,6 +101,7 @@ export const useOrganizationApplicationStore = defineStore('organizationApplicat
     submit,
     updatePending,
     resubmit,
+    updateProfile,
     clear
   }
 })

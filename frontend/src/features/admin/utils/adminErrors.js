@@ -11,7 +11,9 @@ export const ADMIN_ERROR = {
   INVALID_TRANSITION: 'invalidTransition',
   REASON_REQUIRED: 'reasonRequired',
   DUPLICATE_OPEN_REPORT: 'duplicateOpenReport',
-  CANNOT_REPORT_OWN_ACTION: 'cannotReportOwnAction'
+  CANNOT_REPORT_OWN_ACTION: 'cannotReportOwnAction',
+  DUPLICATE_EMAIL: 'duplicateEmail',
+  CAPACITY_BELOW_CONFIRMED: 'capacityBelowConfirmed'
 }
 
 const KNOWN_CODES = new Set(Object.values(ADMIN_ERROR))
