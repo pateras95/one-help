@@ -32,7 +32,9 @@ export default {
     submit: 'Create account',
     submitting: 'Creating account...',
     haveAccount: 'Already have an account?',
-    loginLink: 'Sign in'
+    loginLink: 'Sign in',
+    organizerNote: 'Standard registration creates a volunteer account. Organization representatives can apply after registering:',
+    organizerNoteLink: 'Learn how to become an organizer'
   },
   validation: {
     required: 'This field is required.',
@@ -46,6 +48,7 @@ export default {
     invalidPassword: 'Incorrect password.',
     duplicateEmail: 'An account with that email already exists.',
     invalidSession: 'Your session is no longer valid. Please sign in again.',
+    accountSuspended: 'This account has been suspended. Please contact an administrator.',
     generic: 'Something went wrong. Please try again.'
   },
   notifications: {

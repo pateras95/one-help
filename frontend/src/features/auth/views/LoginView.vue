@@ -19,7 +19,7 @@ const authStore = useAuthStore()
 const notificationsStore = useNotificationsStore()
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-const KNOWN_ERROR_CODES = ['unknownEmail', 'invalidPassword']
+const KNOWN_ERROR_CODES = ['unknownEmail', 'invalidPassword', 'accountSuspended']
 
 const email = ref('')
 const password = ref('')
@@ -44,7 +44,9 @@ function validate() {
 }
 
 function defaultLandingFor(role) {
-  return role === ROLES.ORGANIZER ? ROUTES.ORGANIZER : ROUTES.MY_ACTIONS
+  if (role === ROLES.ORGANIZER) return ROUTES.ORGANIZER
+  if (role === ROLES.ADMINISTRATOR) return ROUTES.ADMIN
+  return ROUTES.MY_ACTIONS
 }
 
 function fillDemoCredentials(credentials) {

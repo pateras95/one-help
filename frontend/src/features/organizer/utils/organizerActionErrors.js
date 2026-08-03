@@ -15,7 +15,9 @@ export const ORGANIZER_ACTION_ERROR = {
   INVALID_STATUS: 'invalidStatus',
   INVALID_TRANSITION: 'invalidTransition',
   ACTION_DATE_IN_PAST: 'actionDateInPast',
-  INVALID_COORDINATES: 'invalidCoordinates'
+  INVALID_COORDINATES: 'invalidCoordinates',
+  ORGANIZATION_SUSPENDED: 'organizationSuspended',
+  ORGANIZATION_NOT_APPROVED: 'organizationNotApproved'
 }
 
 const KNOWN_CODES = new Set(Object.values(ORGANIZER_ACTION_ERROR))

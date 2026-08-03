@@ -48,19 +48,7 @@ const authStore = useAuthStore()
           </template>
         </template>
 
-        <VBtn
-          v-else-if="authStore.isAuthenticated"
-          icon
-          variant="tonal"
-          color="primary"
-          size="small"
-          :to="ROUTES.ACCOUNT"
-          :aria-label="`${t('navigation.account')}: ${authStore.currentUser.firstName} ${authStore.currentUser.lastName}`"
-        >
-          <span class="text-caption font-weight-bold" aria-hidden="true">
-            {{ authStore.currentUser.avatarInitials }}
-          </span>
-        </VBtn>
+        <AccountMenu v-else-if="authStore.isAuthenticated" compact />
         <VBtn
           v-else
           icon="mdi-login"

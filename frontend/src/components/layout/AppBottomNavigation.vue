@@ -40,7 +40,7 @@ const items = computed(() => {
       :to="item.to"
     >
       <VIcon :icon="item.icon" aria-hidden="true" />
-      <span>{{ t(item.labelKey) }}</span>
+      <span>{{ t(item.mobileLabelKey ?? item.labelKey) }}</span>
     </VBtn>
   </VBottomNavigation>
 </template>

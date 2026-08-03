@@ -16,6 +16,7 @@ import { useParticipationStore } from '@/features/participation/stores/participa
 import { withOverlaidCount } from '@/features/participation/utils/participationCount'
 import ActionsMap from '@/features/map/components/ActionsMap.vue'
 import { hasValidCoordinates } from '@/features/map/utils/mapCoordinates'
+import ReportActionCard from '@/features/actions/components/ReportActionCard.vue'
 
 const { t, locale } = useI18n()
 const route = useRoute()
@@ -193,6 +194,8 @@ watch(() => route.params.actionId, load)
               }) }}
             </span>
           </OHCard>
+
+          <ReportActionCard :action-id="displayAction.id" class="mt-4" />
         </VCol>
       </VRow>
     </template>

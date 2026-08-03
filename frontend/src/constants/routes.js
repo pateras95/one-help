@@ -15,7 +15,14 @@ export const ROUTES = {
   ORGANIZER_NEW_ACTION: '/organizer/actions/new',
   ACCOUNT: '/account',
   CHECK_IN: '/check-in',
-  UNAUTHORIZED: '/unauthorized'
+  UNAUTHORIZED: '/unauthorized',
+  BECOME_ORGANIZER: '/become-organizer',
+  ADMIN: '/admin',
+  ADMIN_USERS: '/admin/users',
+  ADMIN_ORGANIZATIONS: '/admin/organizations',
+  ADMIN_ACTIONS: '/admin/actions',
+  ADMIN_REPORTS: '/admin/reports',
+  ADMIN_ACTIVITY: '/admin/activity'
 }
 
 /** Builds the details path for a single action, e.g. `/actions/act-001`. */

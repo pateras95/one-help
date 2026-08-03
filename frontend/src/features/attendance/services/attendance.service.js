@@ -1,6 +1,7 @@
 import { mockResponse } from '@/utils/mockResponse'
 import { getMergedActions } from '@/features/organizer/mocks/organizerActions.storage'
 import { ORGANIZER_ACTION_STATUS } from '@/features/organizer/utils/organizerActionStatus'
+import { isActionPubliclyVisible } from '@/features/actions/utils/actionVisibility'
 import { getParticipation, getParticipationById } from '@/features/participation/services/participation.service'
 import { PARTICIPATION_STATUS } from '@/features/participation/utils/participationStatus'
 import { readAttendance, addAttendanceRecord, updateAttendanceRecord } from '../mocks/attendance.storage'
@@ -27,7 +28,7 @@ function findAttendanceByParticipation(participationId) {
  * do, regardless of date) and only a confirmed participant may check in.
  */
 async function performCheckIn({ action, participation, method, recordedByOrganizerId }) {
-  if (action.organizerStatus !== ORGANIZER_ACTION_STATUS.PUBLISHED) {
+  if (action.organizerStatus !== ORGANIZER_ACTION_STATUS.PUBLISHED || !isActionPubliclyVisible(action)) {
     return mockResponse(null, { shouldFail: true, errorMessage: ATTENDANCE_ERROR.ACTION_NOT_JOINABLE })
   }
   if (!participation || participation.status !== PARTICIPATION_STATUS.CONFIRMED) {
@@ -221,7 +222,7 @@ export async function generateCheckInSession(organizerId, actionId) {
   if (!action || action.organizerId !== organizerId) {
     return mockResponse(null, { shouldFail: true, errorMessage: ATTENDANCE_ERROR.NOT_OWNER })
   }
-  if (action.organizerStatus !== ORGANIZER_ACTION_STATUS.PUBLISHED) {
+  if (action.organizerStatus !== ORGANIZER_ACTION_STATUS.PUBLISHED || !isActionPubliclyVisible(action)) {
     return mockResponse(null, { shouldFail: true, errorMessage: ATTENDANCE_ERROR.ACTION_NOT_JOINABLE })
   }
 

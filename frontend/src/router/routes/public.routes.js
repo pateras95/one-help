@@ -4,6 +4,8 @@ import { authRoutes } from '@/features/auth/routes'
 import { organizerRoutes } from '@/features/organizer/routes'
 import { attendanceRoutes } from '@/features/attendance/routes'
 import { mapRoutes } from '@/features/map/routes'
+import { adminRoutes } from '@/features/admin/routes'
+import { organizerApplicationRoutes } from '@/features/organizerApplication/routes'
 
 /**
  * Public routes, accessible without authentication. `titleKey` points at a
@@ -25,6 +27,8 @@ export const publicRoutes = [
   ...organizerRoutes,
   ...attendanceRoutes,
   ...mapRoutes,
+  ...adminRoutes,
+  ...organizerApplicationRoutes,
   {
     path: ROUTES.ABOUT,
     name: 'about',

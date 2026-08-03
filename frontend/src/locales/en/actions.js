@@ -59,5 +59,19 @@ export default {
     notFoundMessage: 'The action you are looking for does not exist or was removed.',
     errorTitle: 'Could not load this action',
     errorMessage: 'Please try again shortly.'
+  },
+  report: {
+    sectionTitle: 'Report a problem',
+    description: 'Spotted incorrect information, unsafe content, or something else wrong with this action? Let us know.',
+    action: 'Report this action',
+    signInMessage: 'Sign in to report a problem with this action.',
+    signInAction: 'Sign in',
+    dialogTitle: 'Report this action',
+    reasonLabel: 'Reason',
+    descriptionLabel: 'Additional details (optional)',
+    descriptionHint: 'Any extra context that could help review this report.',
+    cancel: 'Cancel',
+    submit: 'Submit report',
+    submitSuccess: 'Thanks — your report has been submitted for review.'
   }
 }

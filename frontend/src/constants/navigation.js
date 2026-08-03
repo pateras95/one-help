@@ -8,7 +8,10 @@ import { ROLES } from '@/constants/roles'
  * separate desktop/mobile navigation lists.
  *
  * `labelKey` is a translation key, resolved via `t()` in the consuming
- * component — this file stays locale-independent.
+ * component — this file stays locale-independent. An item may also
+ * declare `mobileLabelKey` for a shorter label used only by the bottom
+ * navigation (which has little horizontal room); every other consumer
+ * (desktop nav, account menu, page titles) always uses `labelKey`.
  *
  * Contact is intentionally desktop-only (`showOnMobile: false`) — Map
  * took its place in every four-item mobile set below, and Contact
@@ -80,6 +83,10 @@ export const AUTHENTICATED_MOBILE_NAVIGATION = {
       to: ROUTES.MY_ACTIONS,
       routeName: 'my-actions',
       labelKey: 'navigation.myActions',
+      // Bottom-nav space is tight — a shorter label avoids wrapping at
+      // 320px. Only `AppBottomNavigation` reads this; the page title and
+      // account menu keep the full `labelKey` text.
+      mobileLabelKey: 'navigation.myActionsMobile',
       icon: 'mdi-hand-heart-outline'
     }
   ],
@@ -92,6 +99,26 @@ export const AUTHENTICATED_MOBILE_NAVIGATION = {
       routeName: 'organizer',
       labelKey: 'navigation.organizerArea',
       icon: 'mdi-briefcase-outline'
+    }
+  ],
+  // Administrator swaps Map for the Admin workspace and includes Account
+  // directly (unlike the other roles, which reach Account only via the
+  // top app bar) — administrators have no volunteer/organizer
+  // destination to put in that fourth slot instead.
+  [ROLES.ADMINISTRATOR]: [
+    NAVIGATION_ITEMS[0],
+    NAVIGATION_ITEMS[1],
+    {
+      to: ROUTES.ADMIN,
+      routeName: 'admin-dashboard',
+      labelKey: 'navigation.admin',
+      icon: 'mdi-shield-account-outline'
+    },
+    {
+      to: ROUTES.ACCOUNT,
+      routeName: 'account',
+      labelKey: 'navigation.account',
+      icon: 'mdi-account-outline'
     }
   ]
 }

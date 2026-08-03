@@ -2,6 +2,9 @@ import { mockResponse } from '@/utils/mockResponse'
 import { MOCK_USERS } from '../mocks/users.mock'
 import { ROLES } from '@/constants/roles'
 import { DEFAULT_LOCALE } from '@/constants/locales'
+import { getUserStatus } from '@/features/admin/mocks/userStatus.storage'
+import { ACCOUNT_STATUS } from '@/features/admin/utils/accountStatus'
+import { getUserRoleOverride } from '../mocks/userRole.storage'
 
 /**
  * In-memory copy of the fixtures — registrations are added here, never to
@@ -30,10 +33,17 @@ function sanitizeUser(user) {
     firstName: user.firstName,
     lastName: user.lastName,
     email: user.email,
-    role: user.role,
+    // A successful organizer application overrides the base fixture's
+    // role — see `mocks/userRole.storage.js` for why this needs its own
+    // persisted overlay rather than mutating `usersDb` directly.
+    role: getUserRoleOverride(user.id) ?? user.role,
     avatarInitials: user.avatarInitials,
     localePreference: user.localePreference,
-    createdAt: user.createdAt
+    createdAt: user.createdAt,
+    // Admin-moderated account standing — not part of the base fixture,
+    // looked up fresh every time so a just-suspended user is reflected
+    // immediately everywhere this shape is used.
+    status: getUserStatus(user.id)
   }
 }
 
@@ -57,6 +67,9 @@ export async function login(email, password) {
   }
   if (user.password !== password) {
     return mockResponse(null, { shouldFail: true, errorMessage: 'invalidPassword' })
+  }
+  if (getUserStatus(user.id) === ACCOUNT_STATUS.SUSPENDED) {
+    return mockResponse(null, { shouldFail: true, errorMessage: 'accountSuspended' })
   }
 
   return mockResponse(sanitizeUser(user))
@@ -130,6 +143,22 @@ export async function getCurrentSession(userId) {
   if (!user) {
     return mockResponse(null, { shouldFail: true, errorMessage: 'invalidSession', delay: 150 })
   }
+  // Re-checked on every boot/guarded navigation, not just at login — a
+  // session suspended after it was issued must stop working on its next
+  // initialization, not just block future login attempts.
+  if (getUserStatus(user.id) === ACCOUNT_STATUS.SUSPENDED) {
+    return mockResponse(null, { shouldFail: true, errorMessage: 'accountSuspended', delay: 150 })
+  }
 
   return mockResponse(sanitizeUser(user), { delay: 150 })
+}
+
+/**
+ * All users (base fixtures + this-session registrations), sanitized —
+ * used only by the admin user-management feature.
+ *
+ * @returns {Promise<Array<Object>>}
+ */
+export async function getAllUsers() {
+  return mockResponse(usersDb.map(sanitizeUser))
 }

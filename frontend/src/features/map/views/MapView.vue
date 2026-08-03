@@ -122,6 +122,11 @@ const selectedAction = computed(
 )
 const selectedActionDistance = computed(() => distanceLabelByActionId.value.get(selectedActionId.value) ?? null)
 
+// Two-column "map + selected action" layout only applies on desktop/tablet
+// — on mobile the selected action always sits below the (full-width) map
+// instead, never beside it.
+const showSidePanel = computed(() => Boolean(selectedAction.value) && !mobile.value)
+
 const hasActiveMapFilters = computed(() => actionsStore.hasActiveFilters || Boolean(statusFilter.value))
 
 function resetAllFilters() {
@@ -180,6 +185,14 @@ watch(resultsList, (list) => {
 // A breakpoint crossing can resize/reflow the map container without
 // Leaflet's own resize detection noticing (it only watches the window).
 watch(mobile, async () => {
+  await nextTick()
+  mapRef.value?.invalidateSize()
+})
+
+// Selecting/deselecting an action toggles the desktop two-column split,
+// which changes the map container's actual width without the window
+// itself resizing — Leaflet needs an explicit nudge to redraw correctly.
+watch(showSidePanel, async () => {
   await nextTick()
   mapRef.value?.invalidateSize()
 })
@@ -310,9 +323,12 @@ watch(mobile, async () => {
       icon="mdi-hand-heart-outline"
     />
 
-    <VRow v-else-if="!mobile">
-      <VCol cols="12" md="8">
-        <div class="oh-map-view__map-wrapper">
+    <template v-else>
+      <!-- Top area: the map (full width when nothing is selected, or the
+           larger column of a two-column split once an action is selected
+           on desktop/tablet — never split on mobile, see `showSidePanel`). -->
+      <div class="oh-map-view__top" :class="{ 'oh-map-view__top--split': showSidePanel }">
+        <div class="oh-map-view__map-wrapper" :class="{ 'oh-map-view__map-wrapper--mobile': mobile }">
           <ActionsMap
             ref="mapRef"
             :actions="displayResultsList"
@@ -322,69 +338,62 @@ watch(mobile, async () => {
             @tile-error="tileLoadError = true"
           />
         </div>
-        <p v-if="tileLoadError" class="text-caption text-textSecondary mt-2">
-          {{ t('map.page.tileErrorNote') }}
-        </p>
-        <EmptyState
-          v-if="mapMarkerCount === 0"
-          class="mt-4"
-          :title="t('map.page.noCoordinatesTitle')"
-          :message="t('map.page.noCoordinatesMessage')"
-          icon="mdi-map-marker-off-outline"
-        />
-      </VCol>
-      <VCol cols="12" md="4">
-        <ActionMapMarkerPopup
-          v-if="selectedAction"
-          class="mb-4"
-          :action="selectedAction"
-          :distance="selectedActionDistance"
-          @close="handleCloseSelected"
-        />
-        <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('map.page.resultsHeading') }}</h2>
-        <div class="oh-map-view__results-list d-flex flex-column ga-4">
-          <ActionCard v-for="action in displayResultsList" :key="action.id" :action="action" />
+        <div v-if="showSidePanel" class="oh-map-view__side">
+          <ActionMapMarkerPopup
+            :action="selectedAction"
+            :distance="selectedActionDistance"
+            @close="handleCloseSelected"
+          />
         </div>
-      </VCol>
-    </VRow>
-
-    <template v-else>
-      <div class="oh-map-view__map-wrapper oh-map-view__map-wrapper--mobile mb-4">
-        <ActionsMap
-          ref="mapRef"
-          :actions="displayResultsList"
-          :selected-action-id="selectedActionId"
-          :user-location="userLocation"
-          @select-marker="handleSelectMarker"
-          @tile-error="tileLoadError = true"
-        />
       </div>
-      <p v-if="tileLoadError" class="text-caption text-textSecondary mb-4">
+
+      <p v-if="tileLoadError" class="text-caption text-textSecondary mt-2">
         {{ t('map.page.tileErrorNote') }}
       </p>
       <EmptyState
         v-if="mapMarkerCount === 0"
-        class="mb-4"
+        class="mt-4"
         :title="t('map.page.noCoordinatesTitle')"
         :message="t('map.page.noCoordinatesMessage')"
         icon="mdi-map-marker-off-outline"
       />
+
+      <!-- Mobile-only: the selected action sits between the map and the
+           full results list (never beside the map, see `showSidePanel`). -->
       <ActionMapMarkerPopup
-        v-if="selectedAction"
-        class="mb-4"
+        v-if="selectedAction && mobile"
+        class="mt-4"
         :action="selectedAction"
         :distance="selectedActionDistance"
         @close="handleCloseSelected"
       />
-      <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('map.page.resultsHeading') }}</h2>
-      <div class="d-flex flex-column ga-4">
-        <ActionCard v-for="action in displayResultsList" :key="action.id" :action="action" />
-      </div>
+
+      <h2 class="text-subtitle-1 font-weight-bold mt-6 mb-3">{{ t('map.page.resultsHeading') }}</h2>
+      <VRow>
+        <VCol v-for="action in displayResultsList" :key="action.id" cols="12" sm="6" md="4">
+          <ActionCard :action="action" />
+        </VCol>
+      </VRow>
     </template>
   </DefaultLayout>
 </template>
 
 <style scoped>
+.oh-map-view__top {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Only ever applied on desktop/tablet (`showSidePanel` is always false on
+   mobile) — the map keeps the larger ~2/3 column, the selected action
+   panel takes the rest, matching the shared container's column rhythm. */
+.oh-map-view__top--split {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  align-items: start;
+  gap: var(--oh-space-md, 24px);
+}
+
 .oh-map-view__map-wrapper {
   height: 560px;
 }

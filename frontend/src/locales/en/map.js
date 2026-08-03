@@ -46,10 +46,13 @@ export default {
     noCoordinatesNote: "A map isn't available for this action — see its location below."
   },
   organizerForm: {
-    sectionCoordinates: 'Map coordinates (optional)',
-    latitudeLabel: 'Latitude',
-    longitudeLabel: 'Longitude',
-    coordinatesHint: 'Optional. Fill in both fields for this action to appear on the map, or leave both blank.',
+    sectionCoordinates: 'Action location on map',
+    coordinatesHint: 'Optional. This map marker controls where this action appears on the Actions Map — it is separate from the address fields above and does not change them.',
+    pickerInstructions: 'Click or tap the map to place the marker. Drag the marker to move it.',
+    pickerAriaLabel: "Interactive map for choosing this action's location. Click or tap to place a marker, or drag the marker to move it.",
+    selectedCoordinates: 'Selected coordinates: {lat}, {lng}',
+    noLocationSelected: 'No location selected yet — this action will not appear on the map until you place a marker.',
+    clearLocation: 'Clear location',
     missingCoordinatesNote: "This action has no coordinates, so it won't appear on the map. It stays visible in the Actions list."
   },
   validation: {

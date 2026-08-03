@@ -1,7 +1,8 @@
 import { mockResponse } from '@/utils/mockResponse'
 import { startOfDay, isPastDate } from '@/utils/date'
 import { getMergedActions } from '@/features/organizer/mocks/organizerActions.storage'
-import { ORGANIZER_ACTION_STATUS, PUBLIC_VISIBLE_STATUSES } from '@/features/organizer/utils/organizerActionStatus'
+import { ORGANIZER_ACTION_STATUS } from '@/features/organizer/utils/organizerActionStatus'
+import { isActionPubliclyVisible } from '../utils/actionVisibility'
 
 /**
  * Derives the public-facing status from the organizer lifecycle status
@@ -15,10 +16,6 @@ function computeStatus(action) {
   if (isPastDate(action.date)) return 'completed'
   if (action.registeredCount >= action.capacity) return 'full'
   return 'open'
-}
-
-function isPubliclyVisible(action) {
-  return PUBLIC_VISIBLE_STATUSES.includes(action.organizerStatus)
 }
 
 /** Picks the active locale's text out of each bilingual `{ el, en }` field. */
@@ -102,7 +99,7 @@ export async function getActions(filters = {}) {
   const { category, search, datePreset = 'all', sort = 'soonest', locale = 'el' } = filters
 
   const localized = getMergedActions()
-    .filter(isPubliclyVisible)
+    .filter(isActionPubliclyVisible)
     .map((action) => localizeAction(action, locale))
   const filtered = localized
     .filter((action) => matchesCategory(action, category))
@@ -123,6 +120,6 @@ export async function getActions(filters = {}) {
  */
 export async function getActionById(id, locale = 'el') {
   const found = getMergedActions().find((action) => action.id === id)
-  const visible = found && isPubliclyVisible(found) ? found : null
+  const visible = found && isActionPubliclyVisible(found) ? found : null
   return mockResponse(visible ? localizeAction(visible, locale) : null)
 }

@@ -149,6 +149,8 @@ export default {
     invalidTransition: 'This status change is not allowed.',
     actionDateInPast: 'You cannot republish an action whose date has already passed.',
     invalidCoordinates: 'Map coordinates must both be filled in and within range, or both left blank.',
+    organizationSuspended: 'Your organization is currently suspended, so you cannot create, edit, or change the status of any action. Contact an administrator for details.',
+    organizationNotApproved: 'Your organization has not yet been approved, so this action cannot be published. You can still save it as a draft.',
     generic: 'Something went wrong. Please try again.'
   }
 }

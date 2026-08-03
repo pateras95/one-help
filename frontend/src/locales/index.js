@@ -11,6 +11,9 @@ import elParticipation from './el/participation'
 import elOrganizer from './el/organizer'
 import elAttendance from './el/attendance'
 import elMap from './el/map'
+import elAdmin from './el/admin'
+import elBecomeOrganizer from './el/becomeOrganizer'
+import elOrganizationTypes from './el/organizationTypes'
 
 import enCommon from './en/common'
 import enNavigation from './en/navigation'
@@ -25,6 +28,9 @@ import enParticipation from './en/participation'
 import enOrganizer from './en/organizer'
 import enAttendance from './en/attendance'
 import enMap from './en/map'
+import enAdmin from './en/admin'
+import enBecomeOrganizer from './en/becomeOrganizer'
+import enOrganizationTypes from './en/organizationTypes'
 
 export const messages = {
   el: {
@@ -40,7 +46,10 @@ export const messages = {
     participation: elParticipation,
     organizer: elOrganizer,
     attendance: elAttendance,
-    map: elMap
+    map: elMap,
+    admin: elAdmin,
+    becomeOrganizer: elBecomeOrganizer,
+    organizationTypes: elOrganizationTypes
   },
   en: {
     common: enCommon,
@@ -55,6 +64,9 @@ export const messages = {
     participation: enParticipation,
     organizer: enOrganizer,
     attendance: enAttendance,
-    map: enMap
+    map: enMap,
+    admin: enAdmin,
+    becomeOrganizer: enBecomeOrganizer,
+    organizationTypes: enOrganizationTypes
   }
 }

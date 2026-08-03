@@ -191,5 +191,10 @@ async function handleSubmit() {
       {{ t('auth.register.haveAccount') }}
       <RouterLink :to="ROUTES.LOGIN" class="font-weight-bold">{{ t('auth.register.loginLink') }}</RouterLink>
     </p>
+
+    <p class="text-caption text-textSecondary text-center mt-3 mb-0">
+      {{ t('auth.register.organizerNote') }}
+      <RouterLink :to="ROUTES.BECOME_ORGANIZER" class="font-weight-bold">{{ t('auth.register.organizerNoteLink') }}</RouterLink>
+    </p>
   </AuthLayout>
 </template>

@@ -28,6 +28,17 @@ export const MOCK_USERS = [
     avatarInitials: 'ΝΟ',
     localePreference: 'el',
     createdAt: '2025-11-02T10:00:00.000Z'
+  },
+  {
+    id: 'user-admin-001',
+    firstName: 'Ελένη',
+    lastName: 'Αντωνίου',
+    email: 'admin@onehelp.local',
+    password: 'Admin123!',
+    role: ROLES.ADMINISTRATOR,
+    avatarInitials: 'ΕΑ',
+    localePreference: 'el',
+    createdAt: '2025-09-01T10:00:00.000Z'
   }
 ]
 

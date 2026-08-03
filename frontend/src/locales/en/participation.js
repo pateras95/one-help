@@ -21,6 +21,10 @@ export default {
     title: 'Organizer accounts do not join as volunteers',
     message: 'You are signed in as an organizer. Organizer accounts cannot join actions as volunteers through this flow.'
   },
+  administratorRestriction: {
+    title: 'Administrator accounts do not join as volunteers',
+    message: 'You are signed in as an administrator. Administrator accounts cannot join actions as volunteers through this flow.'
+  },
   joinDialog: {
     title: 'Confirm participation',
     message: 'Join the action "{title}" ({date})?',

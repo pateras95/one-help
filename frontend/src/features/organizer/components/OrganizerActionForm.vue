@@ -4,6 +4,7 @@ import { useI18n } from 'vue-i18n'
 import OHButton from '@/components/common/OHButton.vue'
 import { ACTION_CATEGORIES, isValidCategoryId } from '@/constants/actionCategories'
 import { isPastDate } from '@/utils/date'
+import LocationPickerMap from '@/features/map/components/LocationPickerMap.vue'
 import { ORGANIZER_ACTION_STATUS } from '../utils/organizerActionStatus'
 
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -41,8 +42,10 @@ const startTime = ref('')
 const locationNameEl = ref('')
 const locationNameEn = ref('')
 const municipality = ref('')
-const latitude = ref('')
-const longitude = ref('')
+// Numeric or null (never a string) — set only by the map picker or
+// `clearLocation()`, never typed directly, so both are always in sync.
+const latitude = ref(null)
+const longitude = ref(null)
 const capacity = ref(20)
 const urgency = ref('normal')
 const equipmentEl = ref('')
@@ -63,8 +66,8 @@ function loadFromAction(action) {
   locationNameEl.value = action.locationName.el
   locationNameEn.value = action.locationName.en
   municipality.value = action.municipality.el
-  latitude.value = action.latitude != null ? String(action.latitude) : ''
-  longitude.value = action.longitude != null ? String(action.longitude) : ''
+  latitude.value = action.latitude ?? null
+  longitude.value = action.longitude ?? null
   capacity.value = action.capacity
   urgency.value = action.urgency
   equipmentEl.value = action.requiredEquipment.el.join(', ')
@@ -72,6 +75,16 @@ function loadFromAction(action) {
 }
 
 watch(() => props.initialAction, loadFromAction, { immediate: true })
+
+function handleLocationUpdate({ lat, lng }) {
+  latitude.value = lat
+  longitude.value = lng
+}
+
+function clearLocation() {
+  latitude.value = null
+  longitude.value = null
+}
 
 function parseEquipment(value) {
   return value
@@ -94,19 +107,17 @@ function validate() {
   if (!date.value || isPastDate(date.value)) errors.date = t('organizer.form.validation.invalidDate')
   if (!TIME_PATTERN.test(startTime.value)) errors.startTime = t('organizer.form.validation.invalidTime')
 
-  const hasLatitude = latitude.value.trim() !== ''
-  const hasLongitude = longitude.value.trim() !== ''
+  // Defensive only — the map picker always sets both together with
+  // in-range values, so a normal user should never actually hit this.
+  const hasLatitude = latitude.value != null
+  const hasLongitude = longitude.value != null
   if (hasLatitude !== hasLongitude) {
-    errors.latitude = t('map.validation.coordinatesRequiredTogether')
-    errors.longitude = t('map.validation.coordinatesRequiredTogether')
+    errors.location = t('map.validation.coordinatesRequiredTogether')
   } else if (hasLatitude && hasLongitude) {
-    const latitudeValue = Number(latitude.value)
-    const longitudeValue = Number(longitude.value)
-    if (!Number.isFinite(latitudeValue) || latitudeValue < -90 || latitudeValue > 90) {
-      errors.latitude = t('map.validation.invalidLatitude')
-    }
-    if (!Number.isFinite(longitudeValue) || longitudeValue < -180 || longitudeValue > 180) {
-      errors.longitude = t('map.validation.invalidLongitude')
+    if (!Number.isFinite(latitude.value) || latitude.value < -90 || latitude.value > 90) {
+      errors.location = t('map.validation.invalidLatitude')
+    } else if (!Number.isFinite(longitude.value) || longitude.value < -180 || longitude.value > 180) {
+      errors.location = t('map.validation.invalidLongitude')
     }
   }
 
@@ -130,8 +141,8 @@ function handleSubmit() {
     description: { el: descriptionEl.value.trim(), en: descriptionEn.value.trim() },
     locationName: { el: locationNameEl.value.trim(), en: locationNameEn.value.trim() },
     municipality: municipality.value.trim(),
-    latitude: latitude.value.trim() !== '' ? Number(latitude.value) : null,
-    longitude: longitude.value.trim() !== '' ? Number(longitude.value) : null,
+    latitude: latitude.value,
+    longitude: longitude.value,
     date: date.value,
     startTime: startTime.value,
     capacity: Number(capacity.value),
@@ -257,29 +268,33 @@ defineExpose({ validate })
     </VRow>
 
     <h3 class="text-subtitle-2 font-weight-bold mb-2 mt-2">{{ t('map.organizerForm.sectionCoordinates') }}</h3>
-    <p class="text-caption text-textSecondary mb-3">{{ t('map.organizerForm.coordinatesHint') }}</p>
-    <VRow>
-      <VCol cols="12" md="6">
-        <VTextField
-          v-model="latitude"
-          type="number"
-          step="any"
-          :label="t('map.organizerForm.latitudeLabel')"
-          variant="outlined"
-          :error-messages="fieldErrors.latitude"
-        />
-      </VCol>
-      <VCol cols="12" md="6">
-        <VTextField
-          v-model="longitude"
-          type="number"
-          step="any"
-          :label="t('map.organizerForm.longitudeLabel')"
-          variant="outlined"
-          :error-messages="fieldErrors.longitude"
-        />
-      </VCol>
-    </VRow>
+    <p class="text-body-2 text-textSecondary mb-1">{{ t('map.organizerForm.coordinatesHint') }}</p>
+    <p class="text-caption text-textSecondary mb-3">{{ t('map.organizerForm.pickerInstructions') }}</p>
+
+    <div class="oh-organizer-form__picker-wrapper mb-2">
+      <LocationPickerMap :latitude="latitude" :longitude="longitude" @update:location="handleLocationUpdate" />
+    </div>
+
+    <div class="d-flex align-center flex-wrap ga-3 mb-1">
+      <p class="text-body-2 text-textSecondary mb-0">
+        <template v-if="latitude != null && longitude != null">
+          {{ t('map.organizerForm.selectedCoordinates', { lat: latitude.toFixed(5), lng: longitude.toFixed(5) }) }}
+        </template>
+        <template v-else>{{ t('map.organizerForm.noLocationSelected') }}</template>
+      </p>
+      <OHButton
+        v-if="latitude != null || longitude != null"
+        variant="text"
+        size="small"
+        prepend-icon="mdi-map-marker-remove-outline"
+        @click="clearLocation"
+      >
+        {{ t('map.organizerForm.clearLocation') }}
+      </OHButton>
+    </div>
+    <p v-if="fieldErrors.location" class="text-caption text-error mb-3" role="alert">
+      {{ fieldErrors.location }}
+    </p>
 
     <h2 class="text-subtitle-1 font-weight-bold mb-3 mt-2">{{ t('organizer.form.sectionDetails') }}</h2>
     <VRow>
@@ -333,3 +348,9 @@ defineExpose({ validate })
     </OHButton>
   </form>
 </template>
+
+<style scoped>
+.oh-organizer-form__picker-wrapper {
+  height: 320px;
+}
+</style>

@@ -26,7 +26,10 @@ const notificationsStore = useNotificationsStore()
 const showJoinDialog = ref(false)
 const showCancelDialog = ref(false)
 
-const isOrganizer = computed(() => authStore.hasRole(ROLES.ORGANIZER))
+// Organizer AND administrator accounts share the same "not a volunteer
+// flow" restriction — only the copy differs, picked by `restrictionCopy`.
+const isNonVolunteer = computed(() => authStore.isAuthenticated && !authStore.hasRole(ROLES.VOLUNTEER))
+const restrictionCopy = computed(() => (authStore.hasRole(ROLES.ADMINISTRATOR) ? 'administratorRestriction' : 'organizerRestriction'))
 const currentRecord = computed(() => participationStore.getByActionId(props.action.id))
 const isConfirmed = computed(() => currentRecord.value?.status === PARTICIPATION_STATUS.CONFIRMED)
 const isFull = computed(() => props.action.registeredCount >= props.action.capacity)
@@ -92,10 +95,10 @@ async function confirmCancel() {
       </OHButton>
     </template>
 
-    <template v-else-if="isOrganizer">
+    <template v-else-if="isNonVolunteer">
       <VAlert type="info" variant="tonal" density="comfortable">
-        <p class="font-weight-bold mb-1">{{ t('participation.organizerRestriction.title') }}</p>
-        <p class="text-body-2 mb-0">{{ t('participation.organizerRestriction.message') }}</p>
+        <p class="font-weight-bold mb-1">{{ t(`participation.${restrictionCopy}.title`) }}</p>
+        <p class="text-body-2 mb-0">{{ t(`participation.${restrictionCopy}.message`) }}</p>
       </VAlert>
     </template>
 

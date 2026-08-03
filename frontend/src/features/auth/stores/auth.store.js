@@ -140,6 +140,29 @@ export const useAuthStore = defineStore('auth', () => {
     clearStoredSession()
   }
 
+  /**
+   * Re-fetches the current user from the mock "database" and updates
+   * `currentUser` in place, without touching the stored session or
+   * redirecting anywhere. Used after an action taken elsewhere (e.g. an
+   * admin approving this same user's organizer application) may have
+   * changed their role/status — lets the already-open tab reflect it
+   * immediately (nav, guards) without requiring a manual logout/login,
+   * as long as the user revisits/refreshes the relevant screen. This is
+   * not live cross-tab sync — a real backend would push this via a
+   * session refresh or websocket; here it's an explicit, safe refetch.
+   */
+  async function refreshCurrentUser() {
+    if (!currentUser.value) return
+    try {
+      currentUser.value = await getCurrentSession(currentUser.value.id)
+    } catch {
+      // Session no longer valid (e.g. suspended in the meantime) — same
+      // handling as a failed boot-time initialization.
+      currentUser.value = null
+      clearStoredSession()
+    }
+  }
+
   return {
     currentUser,
     isAuthenticated,
@@ -150,6 +173,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     logout,
     initializeSession,
+    refreshCurrentUser,
     hasRole,
     clearError
   }

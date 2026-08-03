@@ -12,7 +12,9 @@ import { isSafeInternalRedirect } from '@/features/auth/utils/safeRedirect'
  */
 
 function defaultAuthenticatedPath(role) {
-  return role === ROLES.ORGANIZER ? ROUTES.ORGANIZER : ROUTES.MY_ACTIONS
+  if (role === ROLES.ORGANIZER) return ROUTES.ORGANIZER
+  if (role === ROLES.ADMINISTRATOR) return ROUTES.ADMIN
+  return ROUTES.MY_ACTIONS
 }
 
 /**

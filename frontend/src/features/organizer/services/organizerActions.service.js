@@ -7,6 +7,8 @@ import { getLocalConfirmedCount } from '@/features/participation/utils/participa
 import { getMergedActions, upsertOrganizerAction } from '../mocks/organizerActions.storage'
 import { ORGANIZER_ACTION_STATUS, canTransition } from '../utils/organizerActionStatus'
 import { ORGANIZER_ACTION_ERROR } from '../utils/organizerActionErrors'
+import { getOrganizationStatus } from '@/features/admin/mocks/organizations.storage'
+import { ORGANIZATION_STATUS } from '@/features/admin/utils/organizationStatus'
 
 const URGENCY_LEVELS = ['normal', 'high', 'urgent']
 const TIME_PATTERN = /^([01]\d|2[0-3]):([0-5]\d)$/
@@ -48,6 +50,31 @@ function validatePayload(payload) {
   if (!isValidEquipment(payload.requiredEquipment)) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
   if (!URGENCY_LEVELS.includes(payload.urgency)) return ORGANIZER_ACTION_ERROR.INVALID_REQUEST
   if (!hasValidOptionalCoordinates(payload)) return ORGANIZER_ACTION_ERROR.INVALID_COORDINATES
+  return null
+}
+
+/**
+ * Enforces the organization-approval gate before any organizer mutation:
+ * a suspended organization can't create, edit, or change any action's
+ * status at all; a pending/rejected one can still manage drafts but
+ * can't make anything publicly visible.
+ *
+ * @param {string} organizerId
+ * @param {string} [targetStatus] - The organizer status the caller is
+ *   about to set (checked only if provided).
+ * @returns {string|null} An `ORGANIZER_ACTION_ERROR` code, or `null` if allowed.
+ */
+function checkOrganizationGate(organizerId, targetStatus) {
+  const status = getOrganizationStatus(organizerId)
+  if (status === ORGANIZATION_STATUS.SUSPENDED) {
+    return ORGANIZER_ACTION_ERROR.ORGANIZATION_SUSPENDED
+  }
+  if (
+    targetStatus === ORGANIZER_ACTION_STATUS.PUBLISHED &&
+    (status === ORGANIZATION_STATUS.PENDING || status === ORGANIZATION_STATUS.REJECTED || status === null)
+  ) {
+    return ORGANIZER_ACTION_ERROR.ORGANIZATION_NOT_APPROVED
+  }
   return null
 }
 
@@ -102,6 +129,11 @@ export async function createOrganizerAction(organizerId, payload) {
     return mockResponse(null, { shouldFail: true, errorMessage: ORGANIZER_ACTION_ERROR.INVALID_REQUEST })
   }
 
+  const gateError = checkOrganizationGate(organizerId, payload?.organizerStatus)
+  if (gateError) {
+    return mockResponse(null, { shouldFail: true, errorMessage: gateError })
+  }
+
   const validationError = validatePayload(payload)
   if (validationError) {
     return mockResponse(null, { shouldFail: true, errorMessage: validationError })
@@ -154,6 +186,11 @@ export async function updateOrganizerAction(organizerId, actionId, payload) {
 
   const { action: existing, error } = findOwned(actionId, organizerId)
   if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
+
+  const gateError = checkOrganizationGate(organizerId)
+  if (gateError) {
+    return mockResponse(null, { shouldFail: true, errorMessage: gateError })
+  }
 
   const validationError = validatePayload(payload)
   if (validationError) {
@@ -211,6 +248,11 @@ export async function changeOrganizerActionStatus(organizerId, actionId, status)
 
   const { action: existing, error } = findOwned(actionId, organizerId)
   if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
+
+  const gateError = checkOrganizationGate(organizerId, status)
+  if (gateError) {
+    return mockResponse(null, { shouldFail: true, errorMessage: gateError })
+  }
 
   if (!canTransition(existing.organizerStatus, status)) {
     return mockResponse(null, { shouldFail: true, errorMessage: ORGANIZER_ACTION_ERROR.INVALID_TRANSITION })
