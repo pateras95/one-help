@@ -80,7 +80,7 @@ const capacityRatio = computed(() => {
     <div class="oh-action-card__body pa-5 d-flex flex-column flex-grow-1">
       <div class="oh-action-card__header d-flex align-center justify-space-between mb-3 ga-2">
         <div class="oh-action-card__category d-flex align-center ga-2">
-          <div v-if="category" class="oh-icon-well oh-action-card__category-well" :class="`bg-${category.accent}`">
+          <div v-if="category" class="oh-icon-well oh-icon-well--sm" :class="`bg-${category.accent}`">
             <VIcon :icon="category.icon" size="16" color="white" aria-hidden="true" />
           </div>
           <span class="text-caption font-weight-bold oh-action-card__category-label">
@@ -178,7 +178,7 @@ const capacityRatio = computed(() => {
 }
 
 .oh-action-card--emphasized {
-  background: rgba(200, 64, 46, 0.035);
+  background: rgba(var(--v-theme-error), 0.035);
 }
 
 .oh-action-card__body {
@@ -192,12 +192,6 @@ const capacityRatio = computed(() => {
 .oh-action-card__category {
   min-width: 0;
   flex: 1 1 auto;
-}
-
-.oh-action-card__category-well {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
 }
 
 .oh-action-card__category-label {

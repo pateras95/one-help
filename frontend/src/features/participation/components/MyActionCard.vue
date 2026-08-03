@@ -77,7 +77,7 @@ const formattedCheckedInAt = computed(() => {
     <div class="oh-action-card__body pa-5 d-flex flex-column flex-grow-1">
       <template v-if="action">
         <div class="oh-action-card__badges d-flex align-center flex-wrap ga-2 mb-2">
-          <div v-if="category" class="oh-icon-well oh-action-card__category-well" :class="`bg-${category.accent}`">
+          <div v-if="category" class="oh-icon-well oh-icon-well--sm" :class="`bg-${category.accent}`">
             <VIcon :icon="category.icon" size="16" color="white" aria-hidden="true" />
           </div>
           <SignalStatusBadge
@@ -164,12 +164,6 @@ const formattedCheckedInAt = computed(() => {
 
 .oh-action-card__body {
   padding-inline-start: calc(var(--oh-space-lg) + 4px);
-}
-
-.oh-action-card__category-well {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
 }
 
 /* Reserves room for the worst case (icon well + two badges wrapping to

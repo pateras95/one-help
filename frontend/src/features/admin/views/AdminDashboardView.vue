@@ -6,6 +6,7 @@ import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
+import ErrorState from '@/components/feedback/ErrorState.vue'
 import { PUBLIC_VISIBLE_STATUSES } from '@/features/organizer/utils/organizerActionStatus'
 import { ROLES } from '@/constants/roles'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
@@ -33,6 +34,9 @@ const activityLoading = ref(false)
 
 const loading = computed(
   () => usersStore.loading || organizationsStore.loading || actionsStore.loading || reportsStore.loading
+)
+const hasError = computed(
+  () => Boolean(usersStore.error || organizationsStore.error || actionsStore.error || reportsStore.error)
 )
 
 async function loadAll() {
@@ -111,6 +115,8 @@ function activityTimestamp(entry) {
     <AdminNavTabs />
 
     <LoadingState v-if="loading" :label="t('admin.common.loading')" />
+
+    <ErrorState v-else-if="hasError" @retry="loadAll" />
 
     <template v-else>
       <VRow>

@@ -58,39 +58,48 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
 
 <template>
   <DefaultLayout>
-    <!-- Section 1 — Hero -->
-    <section class="oh-hero oh-surface-wash">
-      <div class="oh-hero__grid">
-        <div class="oh-hero__copy oh-reveal">
-          <span class="oh-eyebrow mb-4">{{ t('pages.about.hero.eyebrow') }}</span>
-          <h1 class="oh-display font-weight-bold text-textPrimary">
-            {{ t('pages.about.hero.headline') }}
-          </h1>
-          <p class="text-body-1 text-textSecondary mt-5 oh-measure">
-            {{ t('pages.about.hero.lead') }}
-          </p>
-          <div class="d-flex flex-column flex-sm-row ga-3 mt-7">
-            <OHButton
-              color="primary"
-              size="large"
-              :to="ROUTES.ACTIONS"
-              :aria-label="t('pages.about.hero.primaryCtaAriaLabel')"
-            >
-              {{ t('pages.about.hero.primaryCta') }}
-            </OHButton>
-            <OHButton
-              variant="outlined"
-              size="large"
-              :to="ROUTES.REGISTER"
-              :aria-label="t('pages.about.hero.secondaryCtaAriaLabel')"
-            >
-              {{ t('pages.about.hero.secondaryCta') }}
-            </OHButton>
-          </div>
-        </div>
+    <!-- Section 1 — Hero: an editorial "manifesto panel", deliberately not
+         the Home hero's open left-text/right-illustration composition —
+         a bounded, quote-styled spread with the illustration shrunk into
+         a side aside instead of a co-equal visual column. -->
+    <section class="oh-about-hero">
+      <div class="oh-about-hero__panel oh-reveal">
+        <span class="oh-about-hero__quote-mark" aria-hidden="true">&ldquo;</span>
 
-        <div class="oh-hero__visual oh-reveal oh-reveal--delay-2">
-          <SignalIllustration />
+        <div class="oh-about-hero__grid">
+          <aside class="oh-about-hero__aside">
+            <span class="oh-eyebrow">{{ t('pages.about.hero.eyebrow') }}</span>
+            <div class="oh-about-hero__illustration-wrap">
+              <SignalIllustration />
+            </div>
+          </aside>
+
+          <div class="oh-about-hero__main">
+            <h1 class="oh-about-hero__headline font-weight-bold text-textPrimary">
+              {{ t('pages.about.hero.headline') }}
+            </h1>
+            <p class="text-body-1 text-textSecondary oh-about-hero__lead">
+              {{ t('pages.about.hero.lead') }}
+            </p>
+            <div class="d-flex flex-column flex-sm-row ga-3 oh-about-hero__actions">
+              <OHButton
+                color="primary"
+                size="large"
+                :to="ROUTES.ACTIONS"
+                :aria-label="t('pages.about.hero.primaryCtaAriaLabel')"
+              >
+                {{ t('pages.about.hero.primaryCta') }}
+              </OHButton>
+              <OHButton
+                variant="outlined"
+                size="large"
+                :to="ROUTES.REGISTER"
+                :aria-label="t('pages.about.hero.secondaryCtaAriaLabel')"
+              >
+                {{ t('pages.about.hero.secondaryCta') }}
+              </OHButton>
+            </div>
+          </div>
         </div>
       </div>
     </section>
@@ -146,7 +155,7 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
             <span class="oh-timeline__number" aria-hidden="true">{{ index + 1 }}</span>
           </div>
           <div class="oh-timeline__text">
-            <h3 class="oh-headline font-weight-bold" style="font-size: 1.25rem">
+            <h3 class="text-h6 font-weight-bold">
               {{ t(`pages.about.howItWorks.steps.${step.key}.title`) }}
             </h3>
             <p class="text-body-1 text-textSecondary mt-2 oh-measure">
@@ -343,41 +352,114 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
 </template>
 
 <style scoped>
-/* ---------- Hero ---------- */
+/* ---------- Hero: editorial manifesto panel ----------
+ * Deliberately not the Home hero's open, borderless left-text/
+ * right-illustration split — a single bounded, elevated panel (its own
+ * radius/shadow/gradient, like a printed page) with a decorative giant
+ * quote mark, an asymmetric narrow-aside/wide-main grid (illustration
+ * shrunk to a side accent, not a co-equal column), and the lead copy
+ * set off with its own left rule like a pull-quote annotation.
+ */
 
-.oh-hero {
-  padding-block: var(--oh-space-xl) var(--oh-space-2xl);
+.oh-about-hero {
+  padding-block: var(--oh-space-lg) var(--oh-space-xl);
+}
+
+.oh-about-hero__panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--oh-radius-xl);
+  border: 1px solid rgb(var(--v-theme-border));
+  background: var(--oh-gradient-brand-soft);
+  box-shadow: var(--oh-shadow-lg);
+  padding: var(--oh-space-xl) var(--oh-space-lg);
 }
 
 @media (min-width: 960px) {
-  .oh-hero {
-    padding-block: var(--oh-space-3xl) var(--oh-space-2xl);
+  .oh-about-hero__panel {
+    padding: var(--oh-space-3xl) var(--oh-space-2xl);
   }
 }
 
-.oh-hero__grid {
+.oh-about-hero__quote-mark {
+  position: absolute;
+  top: -0.28em;
+  left: var(--oh-space-lg);
+  font-size: 9rem;
+  line-height: 1;
+  font-weight: 800;
+  font-family: Georgia, 'Times New Roman', serif;
+  color: rgb(var(--v-theme-secondary));
+  opacity: 0.1;
+  pointer-events: none;
+  user-select: none;
+}
+
+@media (min-width: 960px) {
+  .oh-about-hero__quote-mark {
+    left: var(--oh-space-2xl);
+    font-size: 13rem;
+  }
+}
+
+.oh-about-hero__grid {
+  position: relative;
+  z-index: 1;
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--oh-space-2xl);
+  gap: var(--oh-space-xl);
+}
+
+@media (min-width: 960px) {
+  .oh-about-hero__grid {
+    grid-template-columns: 0.32fr 0.68fr;
+    gap: var(--oh-space-2xl);
+    align-items: center;
+  }
+}
+
+.oh-about-hero__aside {
+  display: flex;
+  flex-direction: row;
   align-items: center;
+  gap: var(--oh-space-md);
 }
 
 @media (min-width: 960px) {
-  .oh-hero__grid {
-    grid-template-columns: 1.15fr 0.85fr;
-    gap: var(--oh-space-3xl);
+  .oh-about-hero__aside {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--oh-space-lg);
   }
+}
+
+.oh-about-hero__illustration-wrap {
+  width: 96px;
+  flex-shrink: 0;
 }
 
 @media (min-width: 960px) {
-  .oh-hero__copy {
-    padding-inline-start: var(--oh-space-lg);
-    padding-block: var(--oh-space-sm);
+  .oh-about-hero__illustration-wrap {
+    width: 100%;
+    max-width: 168px;
   }
 }
 
-.oh-hero__visual {
-  position: relative;
+.oh-about-hero__headline {
+  font-size: var(--oh-text-display);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+}
+
+.oh-about-hero__lead {
+  margin-top: var(--oh-space-lg);
+  padding-inline-start: var(--oh-space-md);
+  border-inline-start: 3px solid rgb(var(--v-theme-secondary));
+  max-width: 56ch;
+}
+
+.oh-about-hero__actions {
+  margin-top: var(--oh-space-xl);
 }
 
 /* ---------- Why OneHelp cards ---------- */
@@ -418,7 +500,7 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
   bottom: 4px;
   left: 34px;
   width: 2px;
-  background-image: linear-gradient(rgba(19, 42, 77, 0.2) 50%, transparent 50%);
+  background-image: linear-gradient(rgba(var(--v-theme-primary), 0.2) 50%, transparent 50%);
   background-size: 2px 12px;
 }
 
@@ -513,7 +595,7 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: var(--oh-space-xs);
   flex-shrink: 0;
 }
 
@@ -660,7 +742,7 @@ const faqKeys = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
   width: 50%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 92, 63, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.32), transparent 70%);
   z-index: 0;
 }
 

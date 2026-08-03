@@ -75,8 +75,8 @@ function formatTimestamp(isoString) {
           <VDivider v-if="index > 0" />
           <VListItem class="py-2">
             <template #prepend>
-              <div class="oh-icon-well oh-activity__well bg-surfaceOperational mr-1">
-                <VIcon icon="mdi-history" size="18" color="textSecondary" aria-hidden="true" />
+              <div class="oh-icon-well oh-icon-well--sm bg-surfaceOperational mr-1">
+                <VIcon icon="mdi-history" size="16" color="textSecondary" aria-hidden="true" />
               </div>
             </template>
             <VListItemTitle class="text-body-2">{{ activityText(entry) }}</VListItemTitle>
@@ -87,10 +87,3 @@ function formatTimestamp(isoString) {
     </OHCard>
   </DefaultLayout>
 </template>
-
-<style scoped>
-.oh-activity__well {
-  width: 36px;
-  height: 36px;
-}
-</style>

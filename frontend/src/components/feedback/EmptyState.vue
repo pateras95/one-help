@@ -33,7 +33,7 @@ const toneColor = computed(() => ({ neutral: 'primary', search: 'secondary', res
 
 <template>
   <div class="oh-empty-state oh-reveal d-flex flex-column align-center justify-center text-center pa-8">
-    <div class="oh-empty-state__icon-wrap mb-4" :class="`oh-empty-state__icon-wrap--${tone}`">
+    <div class="oh-icon-well oh-icon-well--xl oh-empty-state__icon-wrap mb-4" :class="`oh-empty-state__icon-wrap--${tone}`">
       <VIcon :icon="icon" size="40" :color="toneColor" aria-hidden="true" />
     </div>
     <p class="text-h6 font-weight-bold mb-1">{{ resolvedTitle }}</p>
@@ -46,21 +46,15 @@ const toneColor = computed(() => ({ neutral: 'primary', search: 'secondary', res
 
 <style scoped>
 .oh-empty-state__icon-wrap {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--oh-radius-squircle);
   background: rgb(var(--v-theme-surfaceVariant));
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
 .oh-empty-state__icon-wrap--search {
-  background: rgba(232, 92, 63, 0.1);
+  background: rgba(var(--v-theme-secondary), 0.1);
 }
 
 .oh-empty-state__icon-wrap--restricted {
-  background: rgba(201, 122, 29, 0.12);
+  background: rgba(var(--v-theme-warning), 0.12);
 }
 
 .oh-empty-state__message {

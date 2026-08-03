@@ -88,7 +88,7 @@ const year = new Date().getFullYear()
   width: 40%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 92, 63, 0.22), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.22), transparent 70%);
   pointer-events: none;
   z-index: 0;
 }

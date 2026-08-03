@@ -58,7 +58,7 @@ defineProps({
   font-size: 0.75rem;
   font-weight: 700;
   line-height: 1.3;
-  background: rgba(27, 35, 51, 0.05);
+  background: rgba(var(--v-theme-textPrimary), 0.05);
   white-space: nowrap;
 }
 

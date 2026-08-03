@@ -158,7 +158,7 @@ defineExpose({ invalidateSize })
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
   background: rgb(var(--v-theme-primary));
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--oh-shadow-marker);
   border: 2px solid white;
   cursor: grab;
 }

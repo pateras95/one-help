@@ -337,8 +337,8 @@ defineExpose({ validate })
     </div>
 
     <div v-if="!initialAction" class="oh-panel pa-5 mb-6">
-      <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionStatus') }}</h2>
-      <VRadioGroup v-model="organizerStatus" class="mb-0">
+      <h2 id="organizer-form-status-heading" class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionStatus') }}</h2>
+      <VRadioGroup v-model="organizerStatus" class="mb-0" aria-labelledby="organizer-form-status-heading">
         <VRadio :value="'draft'" :label="t('organizer.form.statusDraftOption')" />
         <VRadio :value="'published'" :label="t('organizer.form.statusPublishedOption')" />
       </VRadioGroup>

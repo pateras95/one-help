@@ -184,7 +184,7 @@ function categoryTarget(categoryId) {
             <span class="oh-journey__number" aria-hidden="true">{{ index + 1 }}</span>
           </div>
           <div class="oh-journey__text">
-            <h3 class="oh-headline font-weight-bold" style="font-size: 1.375rem">
+            <h3 class="text-h6 font-weight-bold">
               {{ t(`home.howItWorks.steps.${step.key}.title`) }}
             </h3>
             <p class="text-body-1 text-textSecondary mt-2 oh-measure">
@@ -266,7 +266,7 @@ function categoryTarget(categoryId) {
   position: relative;
   height: 1px;
   margin-block: var(--oh-space-lg) 0;
-  background: linear-gradient(90deg, transparent, rgba(19, 42, 77, 0.14) 50%, transparent);
+  background: linear-gradient(90deg, transparent, rgba(var(--v-theme-primary), 0.14) 50%, transparent);
 }
 
 .oh-section-divider__dot {
@@ -292,7 +292,7 @@ function categoryTarget(categoryId) {
 .oh-hero__trust li {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--oh-space-sm);
   font-size: 0.875rem;
   font-weight: 600;
   color: rgb(var(--v-theme-textSecondary));
@@ -308,7 +308,7 @@ function categoryTarget(categoryId) {
   left: -4%;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: var(--oh-space-sm);
   padding: 10px 16px;
   border-radius: var(--oh-radius-md);
   background: rgb(var(--v-theme-surface));
@@ -358,6 +358,16 @@ function categoryTarget(categoryId) {
 .oh-category-tile:focus-visible {
   transform: translateY(-4px);
   box-shadow: var(--oh-shadow-md);
+}
+
+/* The tile itself sets `overflow: hidden` (for the watermark/tint
+   layers below) which clips the global `:focus-visible` outline before
+   it can render — an inset ring painted inside the tile's own border
+   box is never subject to that clipping, so keyboard focus stays
+   visible here even though the shared outline can't be. */
+.oh-category-tile:focus-visible {
+  outline: none;
+  box-shadow: var(--oh-shadow-md), inset 0 0 0 3px rgb(var(--v-theme-secondary));
 }
 
 /* Every tile's icon well/label/description keeps its natural size in
@@ -484,7 +494,7 @@ function categoryTarget(categoryId) {
   bottom: 4px;
   left: 34px;
   width: 2px;
-  background-image: linear-gradient(rgba(19, 42, 77, 0.2) 50%, transparent 50%);
+  background-image: linear-gradient(rgba(var(--v-theme-primary), 0.2) 50%, transparent 50%);
   background-size: 2px 12px;
 }
 
@@ -558,7 +568,7 @@ function categoryTarget(categoryId) {
   width: 50%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 92, 63, 0.32), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.32), transparent 70%);
   z-index: 0;
 }
 

@@ -65,7 +65,7 @@ defineProps({
   width: 60%;
   aspect-ratio: 1 / 1;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(232, 92, 63, 0.35), transparent 70%);
+  background: radial-gradient(circle, rgba(var(--v-theme-secondary), 0.35), transparent 70%);
   z-index: 0;
 }
 

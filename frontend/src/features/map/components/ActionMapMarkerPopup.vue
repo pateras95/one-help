@@ -68,7 +68,7 @@ const directionsUrl = computed(() => {
     <div class="oh-action-card__body pa-4">
       <div class="d-flex align-start justify-space-between ga-2 mb-2">
         <div class="d-flex align-center flex-wrap ga-2">
-          <div v-if="category" class="oh-icon-well oh-action-card__category-well" :class="`bg-${category.accent}`">
+          <div v-if="category" class="oh-icon-well oh-icon-well--sm" :class="`bg-${category.accent}`">
             <VIcon :icon="category.icon" size="16" color="white" aria-hidden="true" />
           </div>
           <SignalStatusBadge size="small" :color="statusColor" :label="t(`actions.status.${action.status}`)" />
@@ -148,10 +148,6 @@ const directionsUrl = computed(() => {
   padding-inline-start: calc(var(--oh-space-md) + 4px);
 }
 
-.oh-action-card__category-well {
-  width: 28px;
-  height: 28px;
-}
 
 .oh-map-popup-card__description {
   display: -webkit-box;

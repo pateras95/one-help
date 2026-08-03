@@ -61,7 +61,7 @@ defineProps({
 .oh-illustration__ring {
   position: absolute;
   border-radius: 50%;
-  border: 2px dashed rgba(19, 42, 77, 0.18);
+  border: 2px dashed rgba(var(--v-theme-primary), 0.18);
 }
 .oh-illustration--dark .oh-illustration__ring {
   border-color: rgba(255, 255, 255, 0.28);

@@ -69,11 +69,3 @@ function close() {
     </VCard>
   </VDialog>
 </template>
-
-<style scoped>
-.oh-icon-well {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
-}
-</style>

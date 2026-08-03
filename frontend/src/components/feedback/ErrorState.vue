@@ -44,7 +44,10 @@ const resolvedRetryLabel = computed(() => props.retryLabel || t('common.feedback
     :class="{ 'oh-panel oh-panel--danger': tone === 'destructive' }"
     role="alert"
   >
-    <div class="oh-error-state__icon-wrap mb-4" :class="{ 'oh-error-state__icon-wrap--destructive': tone === 'destructive' }">
+    <div
+      class="oh-icon-well oh-icon-well--xl oh-error-state__icon-wrap mb-4"
+      :class="{ 'oh-error-state__icon-wrap--destructive': tone === 'destructive' }"
+    >
       <VIcon icon="mdi-alert-circle-outline" size="40" color="error" aria-hidden="true" />
     </div>
     <p class="text-h6 font-weight-bold">{{ resolvedTitle }}</p>
@@ -63,16 +66,10 @@ const resolvedRetryLabel = computed(() => props.retryLabel || t('common.feedback
 
 <style scoped>
 .oh-error-state__icon-wrap {
-  width: 88px;
-  height: 88px;
-  border-radius: var(--oh-radius-squircle);
-  background: rgba(200, 64, 46, 0.08);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: rgba(var(--v-theme-error), 0.08);
 }
 
 .oh-error-state__icon-wrap--destructive {
-  background: rgba(200, 64, 46, 0.14);
+  background: rgba(var(--v-theme-error), 0.14);
 }
 </style>

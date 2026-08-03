@@ -157,13 +157,17 @@ onMounted(() => {
         <VWindow v-model="inputTab">
           <VWindowItem value="camera">
             <div v-if="cameraState === 'denied'" class="text-center pa-4">
-              <VIcon icon="mdi-camera-off-outline" size="40" color="textSecondary" class="mb-2" aria-hidden="true" />
-              <p class="font-weight-bold mb-1">{{ t('attendance.scan.cameraDeniedTitle') }}</p>
+              <div class="oh-icon-well oh-icon-well--lg bg-surfaceVariant mx-auto mb-3">
+                <VIcon icon="mdi-camera-off-outline" size="30" color="textSecondary" aria-hidden="true" />
+              </div>
+              <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.cameraDeniedTitle') }}</p>
               <p class="text-body-2 text-textSecondary mb-0">{{ t('attendance.scan.cameraDeniedMessage') }}</p>
             </div>
             <div v-else-if="cameraState === 'unavailable'" class="text-center pa-4">
-              <VIcon icon="mdi-camera-off-outline" size="40" color="textSecondary" class="mb-2" aria-hidden="true" />
-              <p class="font-weight-bold mb-1">{{ t('attendance.scan.cameraUnavailableTitle') }}</p>
+              <div class="oh-icon-well oh-icon-well--lg bg-surfaceVariant mx-auto mb-3">
+                <VIcon icon="mdi-camera-off-outline" size="30" color="textSecondary" aria-hidden="true" />
+              </div>
+              <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.cameraUnavailableTitle') }}</p>
               <p class="text-body-2 text-textSecondary mb-0">{{ t('attendance.scan.cameraUnavailableMessage') }}</p>
             </div>
             <template v-else>
@@ -211,8 +215,10 @@ onMounted(() => {
       </OHCard>
 
       <OHCard v-else-if="phase === 'success'" class="pa-5 text-center">
-        <VIcon icon="mdi-check-circle" size="48" color="success" class="mb-3" aria-hidden="true" />
-        <h2 class="text-subtitle-1 font-weight-bold mb-2">{{ t('attendance.scan.successTitle') }}</h2>
+        <div class="oh-icon-well oh-icon-well--xl bg-success mx-auto mb-4">
+          <VIcon icon="mdi-check-bold" size="36" color="white" aria-hidden="true" />
+        </div>
+        <h2 class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.successTitle') }}</h2>
         <p class="text-body-2 text-textSecondary mb-4">
           {{ t('attendance.scan.successMessage', { title: resolvedActionTitle }) }}
         </p>
@@ -220,35 +226,45 @@ onMounted(() => {
       </OHCard>
 
       <OHCard v-else-if="phase === 'invalid'" class="pa-5 text-center">
-        <VIcon icon="mdi-qrcode-remove" size="48" color="error" class="mb-3" aria-hidden="true" />
-        <p class="font-weight-bold mb-1">{{ t('attendance.scan.invalidTitle') }}</p>
+        <div class="oh-icon-well oh-icon-well--xl bg-error mx-auto mb-4">
+          <VIcon icon="mdi-qrcode-remove" size="36" color="white" aria-hidden="true" />
+        </div>
+        <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.invalidTitle') }}</p>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('attendance.scan.invalidMessage') }}</p>
         <OHButton variant="tonal" @click="resetToInput">{{ t('attendance.scan.cancelAction') }}</OHButton>
       </OHCard>
 
       <OHCard v-else-if="phase === 'expired'" class="pa-5 text-center">
-        <VIcon icon="mdi-clock-alert-outline" size="48" color="warning" class="mb-3" aria-hidden="true" />
-        <p class="font-weight-bold mb-1">{{ t('attendance.scan.expiredTitle') }}</p>
+        <div class="oh-icon-well oh-icon-well--xl bg-warning mx-auto mb-4">
+          <VIcon icon="mdi-clock-alert-outline" size="36" color="white" aria-hidden="true" />
+        </div>
+        <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.expiredTitle') }}</p>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('attendance.scan.expiredMessage') }}</p>
         <OHButton variant="tonal" @click="resetToInput">{{ t('attendance.scan.cancelAction') }}</OHButton>
       </OHCard>
 
       <OHCard v-else-if="phase === 'notConfirmed'" class="pa-5 text-center">
-        <VIcon icon="mdi-account-alert-outline" size="48" color="warning" class="mb-3" aria-hidden="true" />
-        <p class="font-weight-bold mb-1">{{ t('attendance.scan.notConfirmedTitle') }}</p>
+        <div class="oh-icon-well oh-icon-well--xl bg-warning mx-auto mb-4">
+          <VIcon icon="mdi-account-alert-outline" size="36" color="white" aria-hidden="true" />
+        </div>
+        <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.notConfirmedTitle') }}</p>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('attendance.scan.notConfirmedMessage') }}</p>
         <OHButton color="primary" :to="ROUTES.ACTIONS">{{ t('attendance.scan.cancelAction') }}</OHButton>
       </OHCard>
 
       <OHCard v-else-if="phase === 'alreadyCheckedIn'" class="pa-5 text-center">
-        <VIcon icon="mdi-check-circle-outline" size="48" color="success" class="mb-3" aria-hidden="true" />
-        <p class="font-weight-bold mb-1">{{ t('attendance.scan.alreadyCheckedInTitle') }}</p>
+        <div class="oh-icon-well oh-icon-well--xl bg-success mx-auto mb-4">
+          <VIcon icon="mdi-check-circle-outline" size="36" color="white" aria-hidden="true" />
+        </div>
+        <p class="text-h6 font-weight-bold mb-1">{{ t('attendance.scan.alreadyCheckedInTitle') }}</p>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('attendance.scan.alreadyCheckedInMessage') }}</p>
         <OHButton color="primary" :to="ROUTES.MY_ACTIONS">{{ t('attendance.scan.viewMyActions') }}</OHButton>
       </OHCard>
 
       <OHCard v-else-if="phase === 'genericError'" class="pa-5 text-center">
-        <VIcon icon="mdi-alert-circle-outline" size="48" color="error" class="mb-3" aria-hidden="true" />
+        <div class="oh-icon-well oh-icon-well--xl bg-error mx-auto mb-4">
+          <VIcon icon="mdi-alert-circle-outline" size="36" color="white" aria-hidden="true" />
+        </div>
         <p class="text-body-2 text-textSecondary mb-4">{{ genericErrorMessage }}</p>
         <OHButton variant="tonal" @click="resetToInput">{{ t('attendance.scan.cancelAction') }}</OHButton>
       </OHCard>

@@ -42,6 +42,10 @@
   --oh-shadow-md: 0 14px 28px -14px rgba(27, 35, 51, 0.24);
   --oh-shadow-lg: 0 24px 48px -18px rgba(27, 35, 51, 0.30);
   --oh-shadow-coral: 0 14px 28px -12px rgba(232, 92, 63, 0.35);
+  /* Neutral (non-warm-tinted) shadow reserved for Leaflet map markers —
+     these sit on arbitrary map tile colors, not app surfaces, so they
+     need real neutral depth rather than the warm elevation shadows above. */
+  --oh-shadow-marker: 0 1px 4px rgba(0, 0, 0, 0.4);
 
   /* Motion: one easing curve, four durations. Every transition in the
      app reuses these rather than inventing its own timing. */
@@ -187,6 +191,7 @@ body {
   flex-shrink: 0;
   transition: transform var(--oh-transition-base);
 }
+.oh-icon-well--sm { width: 28px; height: 28px; }
 .oh-icon-well--lg { width: 68px; height: 68px; }
 .oh-icon-well--xl { width: 88px; height: 88px; }
 

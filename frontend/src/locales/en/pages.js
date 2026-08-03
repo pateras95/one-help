@@ -118,7 +118,52 @@ export default {
     emptyMessage: 'The list of actions will be added in a later phase.'
   },
   contact: {
-    subtitle: 'We are here to help.',
-    body: 'Contact details will be added in a later phase.'
+    hero: {
+      eyebrow: 'Get in touch',
+      headline: "We're here to help.",
+      lead: "Questions about volunteering, your organization, or the platform itself? The OneHelp team reads every message — reach out and we'll get back to you."
+    },
+    methods: {
+      eyebrow: 'Reach us',
+      title: 'Ways to contact us',
+      subtitle: 'Pick whichever is easiest for you.',
+      email: { label: 'Email', value: "info{'@'}onehelp.gr", description: 'We reply within one business day.' },
+      phone: { label: 'Phone', value: '+30 210 000 0000', description: 'For urgent, time-sensitive questions.' },
+      hours: { label: 'Office hours', value: 'Mon–Fri, 9:00–17:00', description: 'Greek time (EET/EEST).' },
+      address: { label: 'Address', value: 'Athens, Greece', description: 'Exact address coming soon.' }
+    },
+    form: {
+      eyebrow: 'Send a message',
+      title: "Tell us what's on your mind",
+      subtitle: 'Fill in the form below and our team will follow up by email.',
+      nameLabel: 'Full name',
+      emailLabel: 'Email address',
+      subjectLabel: 'Subject',
+      subjects: {
+        general: 'General question',
+        volunteering: 'Volunteering',
+        organization: 'My organization',
+        technical: 'Technical issue'
+      },
+      messageLabel: 'Message',
+      messageHint: 'Tell us a bit about what you need.',
+      submit: 'Send message',
+      submitting: 'Sending...',
+      validation: {
+        required: 'This field is required.',
+        invalidEmail: 'Enter a valid email address.',
+        textTooShort: 'Needs at least {min} characters.'
+      },
+      success: {
+        title: 'Message sent',
+        message: "Thanks for reaching out — we'll get back to you by email as soon as we can.",
+        action: 'Send another message'
+      }
+    },
+    faqShortcut: {
+      title: "Didn't find your answer?",
+      message: 'Most questions about volunteering, organizations and QR check-in are already answered on our About page.',
+      action: 'Read the FAQ'
+    }
   }
 }

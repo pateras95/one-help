@@ -85,7 +85,7 @@ function transitionKind(status) {
     <div class="oh-action-card__body pa-5 d-flex flex-column flex-grow-1">
       <div class="d-flex align-center justify-space-between mb-3 ga-2">
         <div class="d-flex align-center ga-2">
-          <div v-if="category" class="oh-icon-well oh-action-card__category-well" :class="`bg-${category.accent}`">
+          <div v-if="category" class="oh-icon-well oh-icon-well--sm" :class="`bg-${category.accent}`">
             <VIcon :icon="category.icon" size="16" color="white" aria-hidden="true" />
           </div>
         </div>
@@ -165,12 +165,6 @@ function transitionKind(status) {
 
 .oh-action-card__body {
   padding-inline-start: calc(var(--oh-space-lg) + 4px);
-}
-
-.oh-action-card__category-well {
-  width: 28px;
-  height: 28px;
-  flex-shrink: 0;
 }
 
 /* The management-button row can wrap to a second line depending on how

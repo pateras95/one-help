@@ -102,7 +102,7 @@ const transitionActionTitle = computed(() => {
 
     <template v-else>
       <VRow class="mb-6">
-        <VCol cols="6" md="3">
+        <VCol cols="12" sm="6" md="3">
           <SignalMetricCard
             :value="summary.totalActions"
             :label="t('organizer.dashboard.summary.totalActions')"
@@ -110,7 +110,7 @@ const transitionActionTitle = computed(() => {
             color="primary"
           />
         </VCol>
-        <VCol cols="6" md="3">
+        <VCol cols="12" sm="6" md="3">
           <SignalMetricCard
             :value="summary.published"
             :label="t('organizer.dashboard.summary.published')"
@@ -118,7 +118,7 @@ const transitionActionTitle = computed(() => {
             color="success"
           />
         </VCol>
-        <VCol cols="6" md="3">
+        <VCol cols="12" sm="6" md="3">
           <SignalMetricCard
             :value="summary.drafts"
             :label="t('organizer.dashboard.summary.drafts')"
@@ -126,7 +126,7 @@ const transitionActionTitle = computed(() => {
             color="textSecondary"
           />
         </VCol>
-        <VCol cols="6" md="3">
+        <VCol cols="12" sm="6" md="3">
           <SignalMetricCard
             :value="summary.confirmedParticipants"
             :label="t('organizer.dashboard.summary.confirmedParticipants')"

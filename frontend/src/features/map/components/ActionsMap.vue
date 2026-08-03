@@ -221,7 +221,7 @@ defineExpose({ invalidateSize })
   height: 30px;
   border-radius: 50% 50% 50% 0;
   transform: rotate(-45deg);
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: var(--oh-shadow-marker);
   border: 2px solid white;
 }
 
@@ -238,7 +238,7 @@ defineExpose({ invalidateSize })
   border-radius: 50%;
   background: #1a73e8;
   border: 3px solid white;
-  box-shadow: 0 0 0 2px #1a73e8, 0 1px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 0 2px #1a73e8, var(--oh-shadow-marker);
 }
 
 .oh-map-popup {

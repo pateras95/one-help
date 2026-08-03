@@ -7,6 +7,8 @@ import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
+import LoadingState from '@/components/feedback/LoadingState.vue'
+import ErrorState from '@/components/feedback/ErrorState.vue'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useOrganizationApplicationStore } from '@/features/organizerApplication/stores/organizationApplication.store'
@@ -81,7 +83,14 @@ async function handleLogout() {
     </OHCard>
 
     <OHCard v-if="showOrganizationPanel" class="pa-6 mt-4" max-width="480">
-      <template v-if="organizationPanelState === 'none'">
+      <LoadingState v-if="organizationApplicationStore.loading" />
+
+      <ErrorState
+        v-else-if="organizationApplicationStore.error"
+        @retry="organizationApplicationStore.fetchApplication"
+      />
+
+      <template v-else-if="organizationPanelState === 'none'">
         <h2 class="text-subtitle-2 font-weight-bold mb-2">{{ t('becomeOrganizer.account.introTitle') }}</h2>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('becomeOrganizer.account.introMessage') }}</p>
         <OHButton color="primary" variant="tonal" :to="ROUTES.BECOME_ORGANIZER">

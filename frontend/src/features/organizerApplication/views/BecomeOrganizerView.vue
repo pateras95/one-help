@@ -7,6 +7,7 @@ import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
+import ErrorState from '@/components/feedback/ErrorState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { ROLES } from '@/constants/roles'
@@ -147,6 +148,8 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
     <OHPageHeader eyebrow="OneHelp" :title="t('becomeOrganizer.pageTitle')" :subtitle="t('becomeOrganizer.subtitle')" />
 
     <LoadingState v-if="applicationStore.loading" :label="t('becomeOrganizer.loading')" />
+
+    <ErrorState v-else-if="applicationStore.error" @retry="load" />
 
     <template v-else-if="!applicationStore.application">
       <OHCard class="pa-5" max-width="720">
