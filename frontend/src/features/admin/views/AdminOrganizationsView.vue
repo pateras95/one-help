@@ -83,6 +83,17 @@ function organizerName(org) {
   const user = organizerUser(org)
   return user ? `${user.firstName} ${user.lastName}` : ''
 }
+// Seeded organizations may reference an `organizerUserId` with no
+// matching registered mock account (fictional demo data, never meant to
+// resolve to a real user) — a neutral translated fallback beats
+// rendering empty parentheses, and never invents an identity.
+function ownerDisplay(org) {
+  const user = organizerUser(org)
+  return user ? `${user.firstName} ${user.lastName} (${user.email})` : t('admin.organizations.noLinkedOwner')
+}
+function hasResolvedOwner(org) {
+  return Boolean(organizerUser(org))
+}
 function counts(org) {
   return actionCountsByOrganizerId.value[org.organizerUserId] ?? { total: 0, public: 0, hidden: 0 }
 }
@@ -209,7 +220,7 @@ const editSaveLabel = computed(() => t('admin.organizations.editDialog.saveActio
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.organizations.pageTitle')" :subtitle="t('admin.organizations.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.organizations.pageTitle')" :subtitle="t('admin.organizations.subtitle')" />
     <AdminNavTabs />
 
     <VTextField
@@ -261,8 +272,9 @@ const editSaveLabel = computed(() => t('admin.organizations.editDialog.saveActio
           </div>
           <h3 class="text-subtitle-1 font-weight-bold mb-1">{{ name(org) }}</h3>
           <p class="text-body-2 text-textSecondary oh-org-card__description mb-2">{{ description(org) }}</p>
-          <p class="text-caption text-textSecondary mb-1">
-            {{ t('admin.organizations.ownerLabel') }}: {{ organizerName(org) }} ({{ organizerUser(org)?.email }})
+          <p class="text-caption mb-1" :class="hasResolvedOwner(org) ? 'text-textSecondary' : 'text-warning'">
+            <VIcon v-if="!hasResolvedOwner(org)" icon="mdi-alert-circle-outline" size="14" class="mr-1" aria-hidden="true" />
+            {{ t('admin.organizations.ownerLabel') }}: {{ ownerDisplay(org) }}
           </p>
           <p class="text-caption text-textSecondary mb-3">
             {{ t('admin.organizations.actionCounts', { total: counts(org).total, public: counts(org).public, hidden: counts(org).hidden }) }}

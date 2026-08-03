@@ -6,6 +6,8 @@ import QRCode from 'qrcode'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
+import SignalMetricCard from '@/components/common/SignalMetricCard.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -146,6 +148,7 @@ async function handleRegenerate() {
     />
 
     <template v-else-if="action">
+      <span class="oh-eyebrow mb-2 d-block">OneHelp</span>
       <h1 class="oh-page-title font-weight-bold text-textPrimary mb-1">{{ t('attendance.checkIn.pageTitle') }}</h1>
       <p class="text-body-2 text-textSecondary mb-6">{{ title }}</p>
 
@@ -159,16 +162,20 @@ async function handleRegenerate() {
       <template v-else>
         <VRow>
           <VCol cols="12" sm="6" md="3">
-            <OHCard class="pa-4 text-center">
-              <p class="text-h5 font-weight-bold mb-1">{{ confirmedCount }}</p>
-              <p class="text-caption text-textSecondary mb-0">{{ t('attendance.checkIn.confirmedCount', { count: confirmedCount }) }}</p>
-            </OHCard>
+            <SignalMetricCard
+              :value="confirmedCount"
+              :label="t('attendance.checkIn.confirmedCount', { count: confirmedCount })"
+              icon="mdi-account-group-outline"
+              color="primary"
+            />
           </VCol>
           <VCol cols="12" sm="6" md="3">
-            <OHCard class="pa-4 text-center">
-              <p class="text-h5 font-weight-bold mb-1">{{ checkedInCount }}</p>
-              <p class="text-caption text-textSecondary mb-0">{{ t('attendance.checkIn.checkedInCount', { count: checkedInCount }) }}</p>
-            </OHCard>
+            <SignalMetricCard
+              :value="checkedInCount"
+              :label="t('attendance.checkIn.checkedInCount', { count: checkedInCount })"
+              icon="mdi-check-decagram-outline"
+              color="success"
+            />
           </VCol>
         </VRow>
 
@@ -193,9 +200,7 @@ async function handleRegenerate() {
             <p v-if="!isExpired" class="text-body-2 text-textSecondary mb-3" role="status">
               {{ t('attendance.checkIn.qrExpiresIn', { time: countdownLabel }) }}
             </p>
-            <VChip v-else color="error" variant="tonal" class="mb-3">
-              {{ t('attendance.checkIn.qrExpired') }}
-            </VChip>
+            <SignalStatusBadge v-else emphasis="solid" color="error" class="mb-3" :label="t('attendance.checkIn.qrExpired')" />
             <div>
               <OHButton
                 color="primary"

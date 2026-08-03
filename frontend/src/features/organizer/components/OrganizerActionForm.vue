@@ -162,6 +162,7 @@ defineExpose({ validate })
 
 <template>
   <form novalidate @submit.prevent="handleSubmit">
+    <div class="oh-panel pa-5 mb-6">
     <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionBasics') }}</h2>
     <VRow>
       <VCol cols="12" md="6">
@@ -216,8 +217,10 @@ defineExpose({ validate })
         />
       </VCol>
     </VRow>
+    </div>
 
-    <h2 class="text-subtitle-1 font-weight-bold mb-3 mt-2">{{ t('organizer.form.sectionSchedule') }}</h2>
+    <div class="oh-panel pa-5 mb-6">
+    <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionSchedule') }}</h2>
     <VRow>
       <VCol cols="12" md="6">
         <VTextField
@@ -238,8 +241,10 @@ defineExpose({ validate })
         />
       </VCol>
     </VRow>
+    </div>
 
-    <h2 class="text-subtitle-1 font-weight-bold mb-3 mt-2">{{ t('organizer.form.sectionLocation') }}</h2>
+    <div class="oh-panel pa-5 mb-6">
+    <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionLocation') }}</h2>
     <VRow>
       <VCol cols="12" md="6">
         <VTextField
@@ -292,11 +297,13 @@ defineExpose({ validate })
         {{ t('map.organizerForm.clearLocation') }}
       </OHButton>
     </div>
-    <p v-if="fieldErrors.location" class="text-caption text-error mb-3" role="alert">
+    <p v-if="fieldErrors.location" class="text-caption text-error mb-0" role="alert">
       {{ fieldErrors.location }}
     </p>
+    </div>
 
-    <h2 class="text-subtitle-1 font-weight-bold mb-3 mt-2">{{ t('organizer.form.sectionDetails') }}</h2>
+    <div class="oh-panel pa-5 mb-6">
+    <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionDetails') }}</h2>
     <VRow>
       <VCol cols="12" md="6">
         <VTextField
@@ -327,14 +334,15 @@ defineExpose({ validate })
         />
       </VCol>
     </VRow>
+    </div>
 
-    <template v-if="!initialAction">
-      <h2 class="text-subtitle-1 font-weight-bold mb-3 mt-2">{{ t('organizer.form.sectionStatus') }}</h2>
-      <VRadioGroup v-model="organizerStatus" class="mb-2">
+    <div v-if="!initialAction" class="oh-panel pa-5 mb-6">
+      <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.form.sectionStatus') }}</h2>
+      <VRadioGroup v-model="organizerStatus" class="mb-0">
         <VRadio :value="'draft'" :label="t('organizer.form.statusDraftOption')" />
         <VRadio :value="'published'" :label="t('organizer.form.statusPublishedOption')" />
       </VRadioGroup>
-    </template>
+    </div>
 
     <OHButton
       type="submit"

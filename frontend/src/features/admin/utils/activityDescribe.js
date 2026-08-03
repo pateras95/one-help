@@ -20,5 +20,11 @@ export function activityMetadataForTranslation(entry, t) {
       toStatus: t(`admin.reportStatus.${entry.metadata.toStatus}`)
     }
   }
+  if (entry.actionType === ACTIVITY_ACTION_TYPE.ACTION_LIFECYCLE_CHANGED) {
+    return {
+      ...entry.metadata,
+      status: t(`organizer.status.${entry.metadata.status}`)
+    }
+  }
   return entry.metadata ?? {}
 }

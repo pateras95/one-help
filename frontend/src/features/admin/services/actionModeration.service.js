@@ -6,8 +6,10 @@ import { logActivity } from '../mocks/activityLog.storage'
 import { ACTION_MODERATION_STATUS, canTransitionModeration } from '../utils/actionModerationStatus'
 import { ACTIVITY_ACTION_TYPE, ACTIVITY_TARGET_TYPE } from '../utils/activityLogTypes'
 import { ADMIN_ERROR } from '../utils/adminErrors'
-import { validatePayload as validateActionPayload } from '@/features/organizer/services/organizerActions.service'
-import { canTransition as canTransitionOrganizerStatus } from '@/features/organizer/utils/organizerActionStatus'
+import {
+  validatePayload as validateActionPayload,
+  changeOrganizerActionStatus
+} from '@/features/organizer/services/organizerActions.service'
 import { getLocalConfirmedCount } from '@/features/participation/utils/participationCount'
 
 /**
@@ -185,18 +187,18 @@ export async function restoreAction(adminUserId, actionId) {
 /**
  * Edits an action's own content fields from the admin side (title,
  * description, category, date/time, location, capacity, urgency,
- * required equipment, and optionally its organizer lifecycle status) —
- * reuses the exact same field validation the organizer's own edit form
- * uses, so an admin edit can never produce a record the organizer-facing
- * form would itself reject. Moderation status is untouched here — it
- * only ever changes via `approveAction`/`rejectAction`/`hideAction`/
- * `restoreAction` above, kept deliberately separate from lifecycle
- * status.
+ * required equipment) — reuses the exact same field validation the
+ * organizer's own edit form uses, so an admin edit can never produce a
+ * record the organizer-facing form would itself reject. Moderation
+ * status is untouched here — it only ever changes via `approveAction`/
+ * `rejectAction`/`hideAction`/`restoreAction` above. Lifecycle status
+ * (draft/published/closed/cancelled) is a separate concept entirely and
+ * only ever changes via `changeActionLifecycleStatus` below, never as a
+ * side effect of a content edit.
  *
  * @param {string} adminUserId
  * @param {string} actionId
- * @param {Object} payload - Same shape as the organizer's own edit form,
- *   plus an optional `organizerStatus` to change lifecycle status.
+ * @param {Object} payload - Same shape as the organizer's own edit form.
  * @returns {Promise<Object>}
  */
 export async function updateActionDetails(adminUserId, actionId, payload) {
@@ -218,18 +220,9 @@ export async function updateActionDetails(adminUserId, actionId, payload) {
     return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.CAPACITY_BELOW_CONFIRMED })
   }
 
-  let nextStatus = existing.organizerStatus
-  if (payload.organizerStatus && payload.organizerStatus !== existing.organizerStatus) {
-    if (!canTransitionOrganizerStatus(existing.organizerStatus, payload.organizerStatus)) {
-      return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_TRANSITION })
-    }
-    nextStatus = payload.organizerStatus
-  }
-
   const municipalityText = payload.municipality.trim()
   const updated = {
     ...existing,
-    organizerStatus: nextStatus,
     categoryId: payload.categoryId,
     title: { el: payload.title.el.trim(), en: payload.title.en.trim() },
     description: { el: payload.description.el.trim(), en: payload.description.en.trim() },
@@ -249,4 +242,42 @@ export async function updateActionDetails(adminUserId, actionId, payload) {
 
   upsertOrganizerAction(updated)
   return mockResponse(decorate(updated))
+}
+
+/**
+ * Moves an action's organizer lifecycle status (draft/published/closed/
+ * cancelled) from the admin side. Deliberately reuses the organizer's
+ * own `changeOrganizerActionStatus` (passing the action's own
+ * `organizerId`, not the admin's id) so the transition graph, the
+ * organization approval/suspension gate, and the closed→published
+ * past-date guard are enforced identically to the organizer's own path
+ * — there is only one place those rules live. The only thing this
+ * wrapper adds is the activity-log entry, since an admin-initiated
+ * change must be auditable the same way moderation actions are.
+ *
+ * @param {string} adminUserId
+ * @param {string} actionId
+ * @param {string} status
+ * @returns {Promise<Object>}
+ */
+export async function changeActionLifecycleStatus(adminUserId, actionId, status) {
+  if (!adminUserId || !actionId) {
+    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+  }
+  const existing = findAction(actionId)
+  if (!existing) {
+    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
+  }
+
+  const updated = await changeOrganizerActionStatus(existing.organizerId, actionId, status)
+
+  logActivity({
+    adminUserId,
+    actionType: ACTIVITY_ACTION_TYPE.ACTION_LIFECYCLE_CHANGED,
+    targetType: ACTIVITY_TARGET_TYPE.ACTION,
+    targetId: actionId,
+    metadata: { title: existing.title.en, status }
+  })
+
+  return decorate(updated)
 }

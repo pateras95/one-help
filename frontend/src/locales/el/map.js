@@ -23,6 +23,8 @@ export default {
     title: 'Επιλεγμένη δράση',
     close: 'Κλείσιμο επιλεγμένης δράσης',
     viewDetails: 'Προβολή λεπτομερειών',
+    directions: 'Οδηγίες διαδρομής',
+    directionsAriaLabel: 'Άνοιγμα οδηγιών διαδρομής για «{title}» στους Χάρτες Google σε νέα καρτέλα',
     noneTitle: 'Καμία δράση επιλεγμένη',
     noneMessage: 'Επίλεξε μια δράση στον χάρτη ή στη λίστα για να δεις τα στοιχεία της εδώ.'
   },
@@ -43,6 +45,8 @@ export default {
   actionDetails: {
     sectionTitle: 'Τοποθεσία στον χάρτη',
     openFullMap: 'Άνοιγμα πλήρους χάρτη',
+    directions: 'Οδηγίες διαδρομής',
+    directionsAriaLabel: 'Άνοιγμα οδηγιών διαδρομής για «{title}» στους Χάρτες Google σε νέα καρτέλα',
     noCoordinatesNote: 'Ο χάρτης δεν είναι διαθέσιμος για αυτή τη δράση — δες την τοποθεσία της παρακάτω.'
   },
   organizerForm: {

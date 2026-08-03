@@ -114,7 +114,7 @@ async function confirmCancel() {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('participation.myActions.title')" :subtitle="t('participation.myActions.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('participation.myActions.title')" :subtitle="t('participation.myActions.subtitle')" />
 
     <LoadingState v-if="isLoading" :label="t('participation.myActions.loading')" />
 

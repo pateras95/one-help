@@ -3,9 +3,3 @@
     <slot />
   </div>
 </template>
-
-<style scoped>
-.oh-page-container {
-  min-height: 100%;
-}
-</style>

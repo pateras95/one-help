@@ -29,6 +29,12 @@ const { t } = useI18n()
 
 const confirmColor = computed(() => (props.transition === 'cancel' ? 'error' : 'primary'))
 
+const dialogIcon = computed(() => {
+  if (props.transition === 'cancel') return 'mdi-close-circle-outline'
+  if (props.transition === 'close') return 'mdi-lock-outline'
+  return 'mdi-check-decagram-outline'
+})
+
 function close() {
   emit('update:modelValue', false)
 }
@@ -36,8 +42,13 @@ function close() {
 
 <template>
   <VDialog :model-value="modelValue" max-width="480" @update:model-value="close">
-    <VCard v-if="transition">
-      <VCardTitle>{{ t(`organizer.transitions.${transition}DialogTitle`) }}</VCardTitle>
+    <VCard v-if="transition" class="pa-2">
+      <VCardTitle class="d-flex align-center ga-3 py-3">
+        <div class="oh-icon-well" :class="`bg-${confirmColor}`">
+          <VIcon :icon="dialogIcon" color="white" aria-hidden="true" />
+        </div>
+        <span class="text-subtitle-1 font-weight-bold">{{ t(`organizer.transitions.${transition}DialogTitle`) }}</span>
+      </VCardTitle>
       <VCardText>
         <p class="mb-0">{{ t(`organizer.transitions.${transition}DialogMessage`, { title: actionTitle }) }}</p>
       </VCardText>
@@ -58,3 +69,11 @@ function close() {
     </VCard>
   </VDialog>
 </template>
+
+<style scoped>
+.oh-icon-well {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+</style>

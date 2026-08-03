@@ -1,7 +1,11 @@
 <script setup>
-import { computed } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue'
 
 const props = defineProps({
+  eyebrow: {
+    type: String,
+    default: ''
+  },
   title: {
     type: String,
     default: ''
@@ -62,21 +66,48 @@ const resolved = computed(() => {
   }
   return VARIANT_PRESETS[props.variant]
 })
+
+// A one-time "reveal" as the section scrolls into view, rather than
+// everything on the page animating in at once on load. Falls back to
+// immediately visible if IntersectionObserver isn't available, so this
+// can never leave content permanently hidden.
+const sectionRef = ref(null)
+const isVisible = ref(typeof IntersectionObserver === 'undefined')
+let observer = null
+
+onMounted(() => {
+  if (isVisible.value || !sectionRef.value) return
+  observer = new IntersectionObserver(
+    ([entry]) => {
+      if (entry.isIntersecting) {
+        isVisible.value = true
+        observer?.disconnect()
+      }
+    },
+    { threshold: 0.15 }
+  )
+  observer.observe(sectionRef.value)
+})
+
+onBeforeUnmount(() => observer?.disconnect())
 </script>
 
 <template>
   <section
+    ref="sectionRef"
     class="oh-section"
     :class="[
       resolved.fullBleed && 'oh-section--full-bleed',
       resolved.background && `bg-${resolved.background}`,
-      variant !== 'default' && `oh-section--${variant}`
+      variant !== 'default' && `oh-section--${variant}`,
+      isVisible && 'oh-section--visible'
     ]"
   >
     <div
       class="oh-section__inner"
       :class="[resolved.fullBleed && 'oh-container', center && 'text-center']"
     >
+      <span v-if="eyebrow" class="oh-eyebrow mb-2 d-inline-flex">{{ eyebrow }}</span>
       <h2 v-if="title" class="oh-section-title font-weight-bold mb-1">{{ title }}</h2>
       <p
         v-if="subtitle"
@@ -133,10 +164,26 @@ const resolved = computed(() => {
  * full-width background section.
  */
 .oh-section--emphasis {
+  position: relative;
+  overflow: hidden;
   border-radius: var(--oh-radius-lg);
   padding: var(--oh-space-xl) var(--oh-space-lg);
   color: rgb(var(--v-theme-on-primary));
-  background: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgb(var(--v-theme-secondary)) 100%);
+  background: var(--oh-gradient-brand);
+}
+
+/* A faint decorative circle, purely CSS — restrained enough to read as
+   texture rather than a "flashy gradient" on top of a gradient. */
+.oh-section--emphasis::after {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  top: -120px;
+  right: -80px;
+  pointer-events: none;
 }
 
 @media (min-width: 960px) {
@@ -152,5 +199,24 @@ const resolved = computed(() => {
 .oh-section__subtitle {
   color: rgb(var(--v-theme-on-primary));
   opacity: 0.92;
+}
+
+.oh-section__inner {
+  opacity: 0;
+  transform: translateY(18px);
+  transition: opacity var(--oh-transition-slow), transform var(--oh-transition-slow);
+}
+
+.oh-section--visible .oh-section__inner {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oh-section__inner {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
 </style>

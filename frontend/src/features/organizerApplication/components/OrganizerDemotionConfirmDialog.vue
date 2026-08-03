@@ -57,14 +57,16 @@ function confirm() {
       </VCardTitle>
       <VCardText>
         <p class="mb-3">{{ t('becomeOrganizer.demotion.dialogMessage', { name: organizationName }) }}</p>
-        <p class="text-body-2 font-weight-bold mb-1">{{ t('becomeOrganizer.demotion.consequencesTitle') }}</p>
-        <ul class="text-body-2 mb-4">
-          <li>{{ t('becomeOrganizer.demotion.consequenceOrganization') }}</li>
-          <li>{{ t('becomeOrganizer.demotion.consequenceActions') }}</li>
-          <li>{{ t('becomeOrganizer.demotion.consequenceParticipations') }}</li>
-          <li>{{ t('becomeOrganizer.demotion.consequenceAttendance') }}</li>
-          <li>{{ t('becomeOrganizer.demotion.consequenceReports') }}</li>
-        </ul>
+        <div class="oh-panel oh-panel--danger pa-4 mb-4">
+          <p class="text-body-2 font-weight-bold mb-1">{{ t('becomeOrganizer.demotion.consequencesTitle') }}</p>
+          <ul class="text-body-2 mb-0">
+            <li>{{ t('becomeOrganizer.demotion.consequenceOrganization') }}</li>
+            <li>{{ t('becomeOrganizer.demotion.consequenceActions') }}</li>
+            <li>{{ t('becomeOrganizer.demotion.consequenceParticipations') }}</li>
+            <li>{{ t('becomeOrganizer.demotion.consequenceAttendance') }}</li>
+            <li>{{ t('becomeOrganizer.demotion.consequenceReports') }}</li>
+          </ul>
+        </div>
         <VCheckbox
           v-model="confirmed"
           density="comfortable"

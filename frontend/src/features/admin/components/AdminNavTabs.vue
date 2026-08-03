@@ -23,7 +23,7 @@ const items = [
 </script>
 
 <template>
-  <nav :aria-label="t('admin.navigation.landmark')" class="mb-6">
+  <nav :aria-label="t('admin.navigation.landmark')" class="oh-admin-nav-tabs mb-6">
     <VTabs :model-value="route.path" show-arrows density="comfortable" color="primary">
       <VTab v-for="item in items" :key="item.to" :value="item.to" :to="item.to" :prepend-icon="item.icon">
         {{ t(item.labelKey) }}
@@ -31,3 +31,9 @@ const items = [
     </VTabs>
   </nav>
 </template>
+
+<style scoped>
+.oh-admin-nav-tabs {
+  border-bottom: 1px solid rgb(var(--v-theme-border));
+}
+</style>

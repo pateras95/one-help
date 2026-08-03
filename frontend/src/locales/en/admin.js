@@ -130,6 +130,7 @@ export default {
     emptyMessage: 'Organizer applications will appear here.',
     submittedAt: 'Submitted {date}',
     ownerLabel: 'Owner',
+    noLinkedOwner: 'No linked account',
     actionCounts: '{total} actions total ({public} public, {hidden} hidden)',
     removeOrganizerAction: 'Remove organizer and organization',
     search: {
@@ -192,9 +193,13 @@ export default {
       noResultsTitle: 'No results',
       noResultsMessage: 'Try different search terms.'
     },
+    noLinkedOrganization: 'No linked organization',
+    noLinkedOwner: 'No linked account',
     editDialog: {
       title: 'Edit "{title}"'
     },
+    lifecycleMenuLabel: 'Status',
+    lifecycleMenuAriaLabel: 'Change lifecycle status for "{title}"',
     actions: {
       approve: 'Approve',
       reject: 'Reject',
@@ -287,7 +292,8 @@ export default {
       actionHidden: 'Hid the action "{title}"',
       actionRestored: 'Restored the action "{title}"',
       reportStatusChanged: 'Changed a report status from {fromStatus} to {toStatus}',
-      organizerDemoted: 'Removed the organizer and organization "{name}" ({actionsRemoved} actions)'
+      organizerDemoted: 'Removed the organizer and organization "{name}" ({actionsRemoved} actions)',
+      actionLifecycleChanged: 'Changed the status of the action "{title}" to {status}'
     }
   }
 }

@@ -5,6 +5,7 @@ import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
+import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -200,8 +201,9 @@ watch(showSidePanel, async () => {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('map.page.title')" :subtitle="t('map.page.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('map.page.title')" :subtitle="t('map.page.subtitle')" />
 
+    <OHCard class="oh-discovery pa-4 pa-md-5 mb-6">
     <VTextField
       class="mb-4"
       :model-value="actionsStore.search"
@@ -215,7 +217,7 @@ watch(showSidePanel, async () => {
       @update:model-value="actionsStore.setSearch($event ?? '')"
     />
 
-    <VExpansionPanels v-if="mobile" class="mb-4" variant="accordion">
+    <VExpansionPanels v-if="mobile" variant="accordion">
       <VExpansionPanel :title="t('actions.filters.openFilters')">
         <template #text>
           <div class="d-flex flex-column ga-4">
@@ -296,11 +298,12 @@ watch(showSidePanel, async () => {
       </div>
     </template>
 
-    <div v-if="mobile && hasActiveMapFilters" class="mb-4">
+    <div v-if="mobile && hasActiveMapFilters" class="mb-0">
       <OHButton variant="text" size="small" prepend-icon="mdi-filter-remove-outline" @click="resetAllFilters">
         {{ t('actions.filters.reset') }}
       </OHButton>
     </div>
+    </OHCard>
 
     <p class="text-body-2 text-textSecondary" :class="userLocation ? 'mb-1' : 'mb-4'">
       {{ t('map.page.resultsCount', displayResultsList.length, { count: displayResultsList.length }) }}
@@ -328,7 +331,7 @@ watch(showSidePanel, async () => {
            larger column of a two-column split once an action is selected
            on desktop/tablet — never split on mobile, see `showSidePanel`). -->
       <div class="oh-map-view__top" :class="{ 'oh-map-view__top--split': showSidePanel }">
-        <div class="oh-map-view__map-wrapper" :class="{ 'oh-map-view__map-wrapper--mobile': mobile }">
+        <div class="oh-panel oh-map-view__map-wrapper" :class="{ 'oh-map-view__map-wrapper--mobile': mobile }">
           <ActionsMap
             ref="mapRef"
             :actions="displayResultsList"

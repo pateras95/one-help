@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -153,7 +154,10 @@ function fullName(participant) {
 
     <template v-else>
       <div class="d-flex flex-wrap align-center justify-space-between ga-3 mb-1">
-        <h1 class="oh-page-title font-weight-bold text-textPrimary mb-0">{{ t('organizer.participants.title') }}</h1>
+        <div>
+          <span class="oh-eyebrow mb-2 d-block">OneHelp</span>
+          <h1 class="oh-page-title font-weight-bold text-textPrimary mb-0">{{ t('organizer.participants.title') }}</h1>
+        </div>
         <OHButton
           v-if="isPublished"
           variant="tonal"
@@ -167,12 +171,8 @@ function fullName(participant) {
       <p class="text-body-2 text-textSecondary mb-6">{{ actionTitle }}</p>
 
       <div class="d-flex flex-wrap ga-2 mb-4">
-        <VChip color="success" variant="tonal">
-          {{ t('organizer.participants.confirmedCount', { count: confirmedParticipants.length }) }}
-        </VChip>
-        <VChip color="textSecondary" variant="tonal">
-          {{ t('organizer.participants.cancelledCount', { count: cancelledParticipants.length }) }}
-        </VChip>
+        <SignalStatusBadge color="success" :label="t('organizer.participants.confirmedCount', { count: confirmedParticipants.length })" />
+        <SignalStatusBadge color="textSecondary" :label="t('organizer.participants.cancelledCount', { count: cancelledParticipants.length })" />
       </div>
 
       <EmptyState
@@ -213,12 +213,16 @@ function fullName(participant) {
 
                 <div class="d-flex flex-column align-end ga-2">
                   <div class="d-flex flex-wrap ga-2 justify-end">
-                    <VChip size="small" :color="participant.status === 'confirmed' ? 'success' : 'textSecondary'" variant="tonal">
-                      {{ t(`participation.status.${participant.status}`) }}
-                    </VChip>
-                    <VChip size="small" :color="attendanceChipColor(participant)" variant="tonal">
-                      {{ t(`attendance.status.${attendanceStatusFor(participant)}`) }}
-                    </VChip>
+                    <SignalStatusBadge
+                      size="small"
+                      :color="participant.status === 'confirmed' ? 'success' : 'textSecondary'"
+                      :label="t(`participation.status.${participant.status}`)"
+                    />
+                    <SignalStatusBadge
+                      size="small"
+                      :color="attendanceChipColor(participant)"
+                      :label="t(`attendance.status.${attendanceStatusFor(participant)}`)"
+                    />
                   </div>
                   <div class="d-flex ga-2">
                     <OHButton

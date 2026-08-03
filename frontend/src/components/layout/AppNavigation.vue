@@ -1,4 +1,5 @@
 <script setup>
+import { onMounted, onUnmounted, ref } from 'vue'
 import { useDisplay } from 'vuetify'
 import { useRoute } from 'vue-router'
 import { useI18n } from 'vue-i18n'
@@ -14,13 +15,29 @@ const { mobile } = useDisplay()
 const { t } = useI18n()
 const route = useRoute()
 const authStore = useAuthStore()
+
+// Purely presentational scroll-elevation — the header gains a soft
+// shadow once the page has scrolled, instead of a flat border that
+// never changes. No navigation behavior is affected.
+const isElevated = ref(false)
+function handleScroll() {
+  isElevated.value = window.scrollY > 4
+}
+onMounted(() => window.addEventListener('scroll', handleScroll, { passive: true }))
+onUnmounted(() => window.removeEventListener('scroll', handleScroll))
 </script>
 
 <template>
-  <VAppBar color="surface" elevation="0" density="comfortable" class="oh-app-bar">
+  <VAppBar
+    color="surface"
+    elevation="0"
+    density="comfortable"
+    class="oh-app-bar"
+    :class="{ 'oh-app-bar--elevated': isElevated }"
+  >
     <div class="oh-container oh-app-bar__inner">
       <div class="oh-app-bar__brand">
-        <OHLogo />
+        <OHLogo variant="horizontal" :size="30" />
       </div>
 
       <nav
@@ -32,8 +49,9 @@ const authStore = useAuthStore()
           v-for="item in DESKTOP_NAVIGATION_ITEMS"
           :key="item.to"
           :to="item.to"
-          :variant="route.path === item.to ? 'tonal' : 'text'"
-          :color="route.path === item.to ? 'primary' : undefined"
+          variant="text"
+          class="oh-app-bar__nav-item"
+          :class="{ 'oh-app-bar__nav-item--active': route.path === item.to }"
         >
           {{ t(item.labelKey) }}
         </VBtn>
@@ -44,7 +62,9 @@ const authStore = useAuthStore()
           <AccountMenu v-if="authStore.isAuthenticated" />
           <template v-else>
             <OHButton variant="text" :to="ROUTES.LOGIN">{{ t('navigation.login') }}</OHButton>
-            <OHButton variant="tonal" color="primary" :to="ROUTES.REGISTER">{{ t('navigation.register') }}</OHButton>
+            <OHButton variant="tonal" color="primary" class="oh-app-bar__cta" :to="ROUTES.REGISTER">
+              {{ t('navigation.register') }}
+            </OHButton>
           </template>
         </template>
 
@@ -58,6 +78,7 @@ const authStore = useAuthStore()
           :aria-label="t('navigation.login')"
         />
 
+        <span class="oh-app-bar__divider" aria-hidden="true" />
         <OHLanguageSwitcher />
       </div>
     </div>
@@ -67,6 +88,12 @@ const authStore = useAuthStore()
 <style scoped>
 .oh-app-bar {
   border-bottom: 1px solid rgb(var(--v-theme-border));
+  transition: box-shadow var(--oh-transition-base);
+}
+
+.oh-app-bar--elevated {
+  box-shadow: var(--oh-shadow-sm) !important;
+  border-bottom-color: transparent;
 }
 
 /*
@@ -95,5 +122,58 @@ const authStore = useAuthStore()
 .oh-app-bar__nav {
   flex: 1 1 auto;
   justify-content: center;
+}
+
+.oh-app-bar__divider {
+  width: 1px;
+  height: 24px;
+  background: rgb(var(--v-theme-border));
+  margin-inline: 2px;
+}
+
+.oh-app-bar__cta {
+  box-shadow: none;
+}
+
+/*
+ * Mirrors AppBottomNavigation's selected-item bar indicator (a small
+ * brand-colored bar on the edge nearest the content) so desktop and
+ * mobile navigation share one visual language instead of the desktop
+ * version reading as a plain default Vuetify tonal-button state.
+ */
+.oh-app-bar__nav-item {
+  position: relative;
+  font-weight: 500;
+  transition: color var(--oh-transition-fast);
+}
+
+.oh-app-bar__nav-item--active {
+  color: rgb(var(--v-theme-primary));
+  font-weight: 700;
+}
+
+.oh-app-bar__nav-item::after {
+  content: '';
+  position: absolute;
+  bottom: 6px;
+  left: 50%;
+  transform: translateX(-50%) scaleX(0);
+  width: 22px;
+  height: 3px;
+  border-radius: var(--oh-radius-sm);
+  background: rgb(var(--v-theme-secondary));
+  transition: transform var(--oh-transition-base);
+}
+
+.oh-app-bar__nav-item--active::after {
+  transform: translateX(-50%) scaleX(1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .oh-app-bar__nav-item,
+  .oh-app-bar__nav-item::after,
+  .oh-app-bar {
+    transition: none;
+  }
 }
 </style>

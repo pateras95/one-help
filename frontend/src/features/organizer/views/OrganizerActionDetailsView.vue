@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -74,6 +75,14 @@ const checkedInCount = computed(
 )
 
 const isPublished = computed(() => action.value?.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED)
+
+const statusColor = computed(() => {
+  if (!action.value) return 'textSecondary'
+  if (action.value.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED) return 'success'
+  if (action.value.organizerStatus === ORGANIZER_ACTION_STATUS.DRAFT) return 'textSecondary'
+  if (action.value.organizerStatus === ORGANIZER_ACTION_STATUS.CLOSED) return 'warning'
+  return 'error'
+})
 
 const formattedDate = computed(() => {
   if (!action.value) return ''
@@ -165,14 +174,17 @@ async function confirmTransition() {
         <VChip v-if="category" :color="category.accent" variant="tonal" :prepend-icon="category.icon">
           {{ t(category.labelKey) }}
         </VChip>
-        <VChip size="small" variant="tonal">
-          {{ t(`organizer.status.${action.organizerStatus}`) }}
-        </VChip>
-        <VChip v-if="action.urgency !== 'normal'" size="small" :color="action.urgency === 'urgent' ? 'error' : 'warning'">
-          {{ t(`actions.urgency.${action.urgency}`) }}
-        </VChip>
+        <SignalStatusBadge size="small" :color="statusColor" :label="t(`organizer.status.${action.organizerStatus}`)" />
+        <SignalStatusBadge
+          v-if="action.urgency !== 'normal'"
+          emphasis="solid"
+          size="small"
+          :color="action.urgency === 'urgent' ? 'error' : 'warning'"
+          :label="t(`actions.urgency.${action.urgency}`)"
+        />
       </div>
 
+      <span class="oh-eyebrow mb-2 d-block">OneHelp</span>
       <h1 class="oh-page-title font-weight-bold text-textPrimary mb-6">{{ title }}</h1>
 
       <VRow>

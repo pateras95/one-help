@@ -28,7 +28,7 @@ const items = computed(() => {
     :model-value="activeValue"
     tag="nav"
     :aria-label="t('navigation.mobileLandmark')"
-    color="primary"
+    color="secondary"
     grow
     elevation="0"
     class="oh-bottom-nav"
@@ -49,6 +49,7 @@ const items = computed(() => {
 .oh-bottom-nav {
   padding-bottom: env(safe-area-inset-bottom);
   border-top: 1px solid rgb(var(--v-theme-border));
+  box-shadow: var(--oh-shadow-sm);
 }
 
 .oh-bottom-nav :deep(.v-btn--selected) {
@@ -62,10 +63,10 @@ const items = computed(() => {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  width: 24px;
+  width: 28px;
   height: 3px;
   border-radius: 0 0 var(--oh-radius-sm) var(--oh-radius-sm);
-  background: rgb(var(--v-theme-primary));
+  background: rgb(var(--v-theme-secondary));
 }
 
 @media (prefers-reduced-motion: reduce) {

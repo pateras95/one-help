@@ -132,7 +132,7 @@ const statusDialogLabel = computed(() =>
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.reports.pageTitle')" :subtitle="t('admin.reports.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.reports.pageTitle')" :subtitle="t('admin.reports.subtitle')" />
     <AdminNavTabs />
 
     <LoadingState v-if="reportsStore.loading || enriching" :label="t('admin.common.loading')" />

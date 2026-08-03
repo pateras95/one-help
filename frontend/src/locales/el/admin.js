@@ -130,6 +130,7 @@ export default {
     emptyMessage: 'Οι αιτήσεις διοργανωτών θα εμφανίζονται εδώ.',
     submittedAt: 'Υποβλήθηκε {date}',
     ownerLabel: 'Ιδιοκτήτης',
+    noLinkedOwner: 'Χωρίς συνδεδεμένο λογαριασμό',
     actionCounts: '{total} δράσεις σύνολο ({public} δημόσιες, {hidden} κρυφές)',
     removeOrganizerAction: 'Αφαίρεση διοργανωτή και οργάνωσης',
     search: {
@@ -192,9 +193,13 @@ export default {
       noResultsTitle: 'Κανένα αποτέλεσμα',
       noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
     },
+    noLinkedOrganization: 'Χωρίς συνδεδεμένη οργάνωση',
+    noLinkedOwner: 'Χωρίς συνδεδεμένο λογαριασμό',
     editDialog: {
       title: 'Επεξεργασία «{title}»'
     },
+    lifecycleMenuLabel: 'Κατάσταση',
+    lifecycleMenuAriaLabel: 'Αλλαγή κατάστασης κύκλου ζωής για «{title}»',
     actions: {
       approve: 'Έγκριση',
       reject: 'Απόρριψη',
@@ -287,7 +292,8 @@ export default {
       actionHidden: 'Απέκρυψε τη δράση «{title}»',
       actionRestored: 'Αποκατέστησε τη δράση «{title}»',
       reportStatusChanged: 'Άλλαξε την κατάσταση μιας αναφοράς από {fromStatus} σε {toStatus}',
-      organizerDemoted: 'Αφαίρεσε τον διοργανωτή και την οργάνωση «{name}» ({actionsRemoved} δράσεις)'
+      organizerDemoted: 'Αφαίρεσε τον διοργανωτή και την οργάνωση «{name}» ({actionsRemoved} δράσεις)',
+      actionLifecycleChanged: 'Άλλαξε την κατάσταση της δράσης «{title}» σε {status}'
     }
   }
 }

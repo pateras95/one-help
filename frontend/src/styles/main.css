@@ -1,89 +1,143 @@
+/*
+ * OneHelp "Signal" design system.
+ *
+ * A token-driven visual language layered on top of Vuetify (not a
+ * replacement for it): every recognizable "OneHelp" visual trait (soft
+ * warm shadows, the squircle icon-container shape, the relay-arc motif,
+ * layered surfaces, brand gradient) is expressed here as reusable
+ * custom properties and utility classes, consumed by shared components
+ * instead of being redeclared per-page.
+ */
 :root {
   --oh-font-family: 'Roboto', system-ui, -apple-system, sans-serif;
-  --oh-radius-sm: 8px;
-  --oh-radius-md: 12px;
-  --oh-radius-lg: 20px;
+
+  /* Geometry: rounder, more deliberate than Vuetify's stock 8px "lg". */
+  --oh-radius-sm: 10px;
+  --oh-radius-md: 16px;
+  --oh-radius-lg: 24px;
+  --oh-radius-xl: 32px;
+  --oh-radius-squircle: 30%;
+
   --oh-space-xs: 4px;
   --oh-space-sm: 8px;
   --oh-space-md: 16px;
   --oh-space-lg: 24px;
   --oh-space-xl: 40px;
   --oh-space-2xl: 64px;
+  --oh-space-3xl: 96px;
 
-  /* Responsive type scale — a few deliberate roles, not a full token
-     framework. Body/card/label text still uses Vuetify's own text-* classes. */
-  --oh-text-display: clamp(2rem, 1.6rem + 2vw, 3.25rem);
-  --oh-text-page-title: clamp(1.5rem, 1.3rem + 1vw, 2.25rem);
-  --oh-text-section-title: clamp(1.25rem, 1.15rem + 0.5vw, 1.625rem);
+  /* Editorial type scale — deliberately larger/tighter than the previous
+     pass so headlines read as statements, not default hero copy. */
+  --oh-text-display: clamp(2.5rem, 1.7rem + 3.2vw, 4.5rem);
+  --oh-text-headline: clamp(1.75rem, 1.4rem + 1.6vw, 2.75rem);
+  --oh-text-page-title: clamp(1.6rem, 1.35rem + 1.1vw, 2.375rem);
+  --oh-text-section-title: clamp(1.35rem, 1.2rem + 0.6vw, 1.75rem);
 
-  /*
-   * The single shared content-container system: one max-width and one
-   * responsive gutter, reused everywhere content needs to align to the
-   * same column (page content, full-bleed section content, the header,
-   * the footer) via the `.oh-container` class below — instead of each
-   * surface declaring its own max-width/padding independently.
-   */
-  --oh-container-max-width: 1240px;
+  --oh-container-max-width: 1280px;
   --oh-container-gutter: 16px;
+
+  /* Elevation: soft, warm-tinted shadows — never Vuetify's neutral grey
+     Material shadow. Four steps: resting, hover, panel, immersive. */
+  --oh-shadow-sm: 0 2px 10px -4px rgba(27, 35, 51, 0.12);
+  --oh-shadow-md: 0 14px 28px -14px rgba(27, 35, 51, 0.24);
+  --oh-shadow-lg: 0 24px 48px -18px rgba(27, 35, 51, 0.30);
+  --oh-shadow-coral: 0 14px 28px -12px rgba(232, 92, 63, 0.35);
+
+  /* Motion: one easing curve, four durations. Every transition in the
+     app reuses these rather than inventing its own timing. */
+  --oh-ease: cubic-bezier(0.16, 1, 0.3, 1);
+  --oh-ease-in: cubic-bezier(0.4, 0, 0.2, 1);
+  --oh-transition-fast: 140ms var(--oh-ease-in);
+  --oh-transition-base: 240ms var(--oh-ease-in);
+  --oh-transition-slow: 420ms var(--oh-ease);
+  --oh-transition-entrance: 560ms var(--oh-ease);
+
+  /* Brand gradients + washes — the recurring "Signal" surfaces. */
+  --oh-gradient-brand: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, rgb(var(--v-theme-secondary)) 100%);
+  --oh-gradient-brand-soft: linear-gradient(160deg, rgba(19, 42, 77, 0.06) 0%, rgba(232, 92, 63, 0.08) 100%);
+  --oh-gradient-wash: radial-gradient(circle at 15% 15%, rgba(19, 42, 77, 0.09), transparent 55%),
+    radial-gradient(circle at 88% 25%, rgba(232, 92, 63, 0.10), transparent 50%);
+  --oh-gradient-operational: linear-gradient(135deg, rgb(var(--v-theme-primary)) 0%, #274a73 100%);
 }
 
 @media (min-width: 600px) {
-  :root {
-    --oh-container-gutter: 24px;
-  }
+  :root { --oh-container-gutter: 24px; }
 }
 
 @media (min-width: 960px) {
-  :root {
-    --oh-container-gutter: 32px;
-  }
+  :root { --oh-container-gutter: 40px; }
 }
 
-html,
-body,
-#app {
-  height: 100%;
-}
+html, body, #app { height: 100%; }
 
 body {
   margin: 0;
   font-family: var(--oh-font-family);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /*
-   * Full-bleed sections (see OHSection's `fullBleed` prop) use a
-   * `calc(50% - 50vw)` margin to break out of the page's constrained
-   * width. `100vw` includes the scrollbar's width on desktop browsers
-   * that reserve space for it, which would otherwise cause a few pixels
-   * of horizontal overflow whenever a vertical scrollbar is present.
-   * This is the standard mitigation for that specific, well-known
-   * interaction — not a general overflow bypass.
-   */
   overflow-x: hidden;
 }
 
-* {
-  box-sizing: border-box;
-}
+* { box-sizing: border-box; }
 
 :focus-visible {
-  outline: 2px solid rgb(var(--v-theme-primary));
-  outline-offset: 2px;
+  outline: 2px solid rgb(var(--v-theme-secondary));
+  outline-offset: 3px;
+  border-radius: 4px;
 }
+
+/*
+ * Re-tunes Vuetify's own "lg" corner-radius utility (used by every
+ * VCard/VBtn via the theme defaults) to the Signal geometry, in one
+ * place, instead of fighting it component-by-component. Vuetify's own
+ * rule carries `!important`; this one — loaded after vuetify's base
+ * stylesheet — must match it to win.
+ */
+.rounded-lg { border-radius: var(--oh-radius-lg) !important; }
+.rounded-xl { border-radius: var(--oh-radius-xl) !important; }
+
+/* ---------- Typography ---------- */
 
 .oh-display {
   font-size: var(--oh-text-display);
-  line-height: 1.15;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+}
+
+.oh-headline {
+  font-size: var(--oh-text-headline);
+  line-height: 1.1;
+  letter-spacing: -0.01em;
 }
 
 .oh-page-title {
   font-size: var(--oh-text-page-title);
-  line-height: 1.2;
+  line-height: 1.15;
 }
 
 .oh-section-title {
   font-size: var(--oh-text-section-title);
-  line-height: 1.25;
+  line-height: 1.2;
+}
+
+/* A small label above a heading ("VOLUNTEERING · COMMUNITY · TRUST"). */
+.oh-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(var(--v-theme-secondary));
+}
+.oh-eyebrow::before {
+  content: '';
+  width: 18px;
+  height: 2px;
+  border-radius: 1px;
+  background: rgb(var(--v-theme-secondary));
+  flex-shrink: 0;
 }
 
 .oh-container {
@@ -92,4 +146,137 @@ body {
   margin-inline: auto;
   padding-inline: max(var(--oh-container-gutter), env(safe-area-inset-left))
     max(var(--oh-container-gutter), env(safe-area-inset-right));
+}
+
+.oh-measure {
+  max-width: 62ch;
+}
+
+/* ---------- Surfaces ---------- */
+
+/* The one full-bleed "wash" background used behind hero/editorial
+   moments — faint enough to read as depth, not a flashy gradient. */
+.oh-surface-wash {
+  position: relative;
+  isolation: isolate;
+}
+.oh-surface-wash::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--oh-gradient-wash);
+  z-index: -1;
+  pointer-events: none;
+}
+
+/* A cooler, calmer tint reserved for organizer/admin operational
+   surfaces, distinct from the warm public-facing wash. */
+.oh-surface-operational {
+  background: rgb(var(--v-theme-surfaceOperational));
+}
+
+/* ---------- Icon containers ---------- */
+
+.oh-icon-well {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--oh-radius-squircle);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform var(--oh-transition-base);
+}
+.oh-icon-well--lg { width: 68px; height: 68px; }
+.oh-icon-well--xl { width: 88px; height: 88px; }
+
+/* ---------- Interactive card treatment ---------- */
+
+.oh-card-interactive {
+  transition: transform var(--oh-transition-base), box-shadow var(--oh-transition-base), border-color var(--oh-transition-base);
+}
+.oh-card-interactive:hover,
+.oh-card-interactive:focus-within {
+  transform: translateY(-4px);
+  box-shadow: var(--oh-shadow-md);
+}
+.oh-card-interactive:hover .oh-icon-well,
+.oh-card-interactive:focus-within .oh-icon-well {
+  transform: scale(1.06);
+}
+
+/* ---------- Panels ---------- */
+
+/* A stronger, self-contained "boxed" surface for map frames, danger
+   zones, and grouped operational content — distinct from OHCard's
+   plain flat/bordered look. */
+.oh-panel {
+  border-radius: var(--oh-radius-lg);
+  border: 1px solid rgb(var(--v-theme-border));
+  background: rgb(var(--v-theme-surface));
+  overflow: hidden;
+}
+
+.oh-panel--danger {
+  border-color: rgba(200, 64, 46, 0.3);
+  background: rgba(200, 64, 46, 0.04);
+}
+
+/* ---------- Relay-arc decorative motif ---------- */
+
+.oh-relay-arc {
+  position: absolute;
+  border: 2px dashed rgba(19, 42, 77, 0.16);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+/* ---------- Button press feedback ---------- */
+
+/* A small, tactile press-down — on top of Vuetify's own ripple/overlay,
+   not a replacement for it. Applies app-wide since every VBtn already
+   shares this one interaction language. */
+.v-btn {
+  transition: transform var(--oh-transition-fast), box-shadow var(--oh-transition-base);
+}
+.v-btn:active {
+  transform: scale(0.97);
+}
+
+/* ---------- Entrance / reveal motion ---------- */
+
+.oh-reveal {
+  animation: oh-reveal-in var(--oh-transition-entrance) both;
+}
+.oh-reveal--delay-1 { animation-delay: 80ms; }
+.oh-reveal--delay-2 { animation-delay: 160ms; }
+.oh-reveal--delay-3 { animation-delay: 240ms; }
+
+@keyframes oh-reveal-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v-btn,
+  .v-btn:active {
+    transition: none;
+    transform: none;
+  }
+  .oh-card-interactive,
+  .oh-card-interactive:hover,
+  .oh-card-interactive:focus-within,
+  .oh-card-interactive:hover .oh-icon-well,
+  .oh-card-interactive:focus-within .oh-icon-well {
+    transition: none;
+    transform: none;
+  }
+  .oh-reveal,
+  .oh-reveal--delay-1,
+  .oh-reveal--delay-2,
+  .oh-reveal--delay-3 {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
 }

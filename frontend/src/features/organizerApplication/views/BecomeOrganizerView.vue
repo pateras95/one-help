@@ -5,6 +5,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
@@ -122,6 +123,20 @@ watch(() => applicationStore.application?.status, () => {
   showEditForm.value = false
 })
 
+const statusColor = computed(() => {
+  switch (applicationStore.application?.status) {
+    case ORGANIZATION_STATUS.APPROVED:
+      return 'success'
+    case ORGANIZATION_STATUS.PENDING:
+      return 'warning'
+    case ORGANIZATION_STATUS.REJECTED:
+    case ORGANIZATION_STATUS.SUSPENDED:
+      return 'error'
+    default:
+      return 'textSecondary'
+  }
+})
+
 const submitLabel = computed(() => t('becomeOrganizer.form.submitNew'))
 const updateLabel = computed(() => t('becomeOrganizer.form.submitUpdate'))
 const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
@@ -129,7 +144,7 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('becomeOrganizer.pageTitle')" :subtitle="t('becomeOrganizer.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('becomeOrganizer.pageTitle')" :subtitle="t('becomeOrganizer.subtitle')" />
 
     <LoadingState v-if="applicationStore.loading" :label="t('becomeOrganizer.loading')" />
 
@@ -145,9 +160,12 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
 
     <template v-else-if="applicationStore.application.status === ORGANIZATION_STATUS.PENDING">
       <OHCard v-if="!showEditForm" class="pa-5" max-width="720">
-        <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-2">
-          {{ t('becomeOrganizer.pending.title') }}
-        </h2>
+        <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-0">
+            {{ t('becomeOrganizer.pending.title') }}
+          </h2>
+          <SignalStatusBadge :color="statusColor" :label="t(`admin.organizationStatus.${applicationStore.application.status}`)" />
+        </div>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('becomeOrganizer.pending.message') }}</p>
 
         <p class="text-caption text-textSecondary mb-4">
@@ -187,9 +205,12 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
 
     <template v-else-if="applicationStore.application.status === ORGANIZATION_STATUS.APPROVED">
       <OHCard class="pa-5" max-width="720">
-        <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-2">
-          {{ t('becomeOrganizer.approved.title') }}
-        </h2>
+        <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-0">
+            {{ t('becomeOrganizer.approved.title') }}
+          </h2>
+          <SignalStatusBadge :color="statusColor" :label="t(`admin.organizationStatus.${applicationStore.application.status}`)" />
+        </div>
         <p class="text-body-2 text-textSecondary mb-1">
           {{ t('becomeOrganizer.approved.message', { name: name(applicationStore.application) }) }}
         </p>
@@ -202,9 +223,12 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
 
     <template v-else-if="applicationStore.application.status === ORGANIZATION_STATUS.REJECTED">
       <OHCard v-if="!showEditForm" class="pa-5" max-width="720">
-        <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-2">
-          {{ t('becomeOrganizer.rejected.title') }}
-        </h2>
+        <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-0">
+            {{ t('becomeOrganizer.rejected.title') }}
+          </h2>
+          <SignalStatusBadge :color="statusColor" :label="t(`admin.organizationStatus.${applicationStore.application.status}`)" />
+        </div>
         <p class="text-body-2 text-textSecondary mb-4">{{ t('becomeOrganizer.rejected.message') }}</p>
 
         <h3 class="text-subtitle-2 font-weight-bold mb-1">{{ t('becomeOrganizer.rejected.reasonLabel') }}</h3>
@@ -239,9 +263,12 @@ const resubmitLabel = computed(() => t('becomeOrganizer.form.submitResubmit'))
 
     <template v-else-if="applicationStore.application.status === ORGANIZATION_STATUS.SUSPENDED">
       <OHCard class="pa-5" max-width="720">
-        <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-2">
-          {{ t('becomeOrganizer.suspended.title') }}
-        </h2>
+        <div class="d-flex align-center flex-wrap ga-2 mb-2">
+          <h2 ref="panelHeadingRef" tabindex="-1" class="text-subtitle-1 font-weight-bold mb-0">
+            {{ t('becomeOrganizer.suspended.title') }}
+          </h2>
+          <SignalStatusBadge :color="statusColor" :label="t(`admin.organizationStatus.${applicationStore.application.status}`)" />
+        </div>
         <p class="text-body-2 text-textSecondary mb-1">
           {{ t('becomeOrganizer.suspended.message', { name: name(applicationStore.application) }) }}
         </p>

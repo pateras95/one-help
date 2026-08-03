@@ -88,6 +88,7 @@ async function confirmCancel() {
       </VAlert>
       <OHButton
         color="primary"
+        size="large"
         block
         :to="{ path: ROUTES.LOGIN, query: { redirect: actionDetailsPath(action.id) } }"
       >
@@ -110,6 +111,7 @@ async function confirmCancel() {
       <OHButton
         color="error"
         variant="outlined"
+        size="large"
         block
         :loading="participationStore.loading"
         :disabled="participationStore.loading"
@@ -144,6 +146,7 @@ async function confirmCancel() {
     <template v-else>
       <OHButton
         color="primary"
+        size="large"
         block
         :loading="participationStore.loading"
         :disabled="participationStore.loading"

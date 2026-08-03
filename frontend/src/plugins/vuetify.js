@@ -4,15 +4,18 @@ import '@mdi/font/css/materialdesignicons.css'
 import { branding } from '@/config/branding'
 
 /**
- * OneHelp brand theme, sourced from the central branding config so colors
- * are never hardcoded per component.
+ * OneHelp "Signal" theme, sourced from the central branding config so
+ * colors are never hardcoded per component. `on-accent` is set
+ * explicitly since amber is light enough that Vuetify's own contrast
+ * heuristic would otherwise pick white text on it.
  */
 const oneHelpLightTheme = {
   dark: false,
   colors: {
     ...branding.colors,
     'on-background': branding.colors.textPrimary,
-    'on-surface': branding.colors.textPrimary
+    'on-surface': branding.colors.textPrimary,
+    'on-accent': branding.colors.textPrimary
   }
 }
 
@@ -42,7 +45,8 @@ export const vuetify = createVuetify({
     },
     VCard: {
       // Flat + a theme-aware border reads as "trustworthy and restrained"
-      // instead of the heavier default elevation shadow.
+      // instead of the heavier default elevation shadow. Corner radius
+      // itself is re-tuned globally in main.css (`.rounded-lg` override).
       rounded: 'lg',
       variant: 'flat',
       border: true

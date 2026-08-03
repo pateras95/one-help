@@ -16,6 +16,7 @@ import { localizeField } from '@/features/organizer/utils/localizeField'
 import { ROLES } from '@/constants/roles'
 import { ROUTES } from '@/constants/routes'
 import { matchesSearchQuery } from '@/utils/normalizeSearchText'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
 import AdminConfirmDialog from '../components/AdminConfirmDialog.vue'
@@ -175,7 +176,7 @@ const confirmMessage = computed(() => {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.users.pageTitle')" :subtitle="t('admin.users.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.users.pageTitle')" :subtitle="t('admin.users.subtitle')" />
     <AdminNavTabs />
 
     <VTextField
@@ -261,7 +262,7 @@ const confirmMessage = computed(() => {
 
               <div class="d-flex flex-column align-end ga-2">
                 <div class="d-flex flex-wrap ga-2 justify-end">
-                  <VChip size="small" variant="tonal">{{ t(`auth.roles.${user.role}`) }}</VChip>
+                  <SignalStatusBadge size="small" color="textSecondary" :label="t(`auth.roles.${user.role}`)" />
                   <AdminStatusChip
                     :label="t(`admin.accountStatus.${user.status}`)"
                     :icon="statusChip(user.status).icon"

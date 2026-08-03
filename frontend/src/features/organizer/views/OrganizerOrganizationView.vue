@@ -6,6 +6,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
@@ -30,6 +31,20 @@ const showDemotionDialog = ref(false)
 
 const organization = computed(() => applicationStore.application)
 const isSuspended = computed(() => organization.value?.status === ORGANIZATION_STATUS.SUSPENDED)
+
+const statusColor = computed(() => {
+  switch (organization.value?.status) {
+    case ORGANIZATION_STATUS.APPROVED:
+      return 'success'
+    case ORGANIZATION_STATUS.PENDING:
+      return 'warning'
+    case ORGANIZATION_STATUS.REJECTED:
+    case ORGANIZATION_STATUS.SUSPENDED:
+      return 'error'
+    default:
+      return 'textSecondary'
+  }
+})
 const busy = computed(() => saving.value || demoting.value)
 
 function name(org) {
@@ -88,7 +103,7 @@ const saveLabel = computed(() => t('organizer.organization.saveButton'))
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('organizer.organization.pageTitle')" :subtitle="t('organizer.organization.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('organizer.organization.pageTitle')" :subtitle="t('organizer.organization.subtitle')" />
 
     <LoadingState v-if="applicationStore.loading" :label="t('organizer.organization.loading')" />
 
@@ -97,7 +112,9 @@ const saveLabel = computed(() => t('organizer.organization.saveButton'))
         <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.organization.statusSectionTitle') }}</h2>
         <dl class="oh-org-status-summary">
           <dt class="text-caption text-textSecondary">{{ t('organizer.organization.statusLabel') }}</dt>
-          <dd class="text-body-2 mb-2">{{ t(`admin.organizationStatus.${organization.status}`) }}</dd>
+          <dd class="mb-2">
+            <SignalStatusBadge :color="statusColor" :label="t(`admin.organizationStatus.${organization.status}`)" />
+          </dd>
           <dt class="text-caption text-textSecondary">{{ t('organizer.organization.ownerLabel') }}</dt>
           <dd class="text-body-2 mb-2">{{ authStore.currentUser?.firstName }} {{ authStore.currentUser?.lastName }} ({{ authStore.currentUser?.email }})</dd>
           <dt class="text-caption text-textSecondary">{{ t('organizer.organization.submittedLabel') }}</dt>
@@ -121,7 +138,7 @@ const saveLabel = computed(() => t('organizer.organization.saveButton'))
         />
       </OHCard>
 
-      <OHCard class="pa-5" max-width="720" style="border: 1px solid rgb(var(--v-theme-error))">
+      <div class="oh-panel oh-panel--danger pa-5" style="max-width: 720px">
         <h2 class="text-subtitle-1 font-weight-bold text-error mb-2">{{ t('organizer.organization.dangerZoneTitle') }}</h2>
         <p class="text-body-2 text-textSecondary mb-4">
           {{ t('organizer.organization.dangerZoneMessage', { name: name(organization) }) }}
@@ -129,7 +146,7 @@ const saveLabel = computed(() => t('organizer.organization.saveButton'))
         <OHButton color="error" variant="outlined" :disabled="busy" @click="showDemotionDialog = true">
           {{ t('organizer.organization.becomeVolunteerAction') }}
         </OHButton>
-      </OHCard>
+      </div>
 
       <OrganizerDemotionConfirmDialog
         v-model="showDemotionDialog"

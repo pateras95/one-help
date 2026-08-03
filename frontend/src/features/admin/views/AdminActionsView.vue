@@ -17,7 +17,11 @@ import { getAllUsers } from '@/features/auth/services/auth.service'
 import { getLocalConfirmedCount } from '@/features/participation/utils/participationCount'
 import { matchesSearchQuery } from '@/utils/normalizeSearchText'
 import OrganizerActionForm from '@/features/organizer/components/OrganizerActionForm.vue'
+import StatusTransitionDialog from '@/features/organizer/components/StatusTransitionDialog.vue'
 import { organizerActionErrorKey } from '@/features/organizer/utils/organizerActionErrors'
+import { ORGANIZER_ACTION_STATUS, allowedNextStatuses } from '@/features/organizer/utils/organizerActionStatus'
+import { isPastDate } from '@/utils/date'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
 import AdminConfirmDialog from '../components/AdminConfirmDialog.vue'
@@ -55,11 +59,11 @@ function title(action) {
   return localizeField(action.title, locale.value)
 }
 function organizationName(action) {
-  return action.organizationName ? localizeField(action.organizationName, locale.value) : ''
+  return action.organizationName ? localizeField(action.organizationName, locale.value) : t('admin.actions.noLinkedOrganization')
 }
 function organizerName(action) {
   const user = usersById.value[action.organizerId]
-  return user ? `${user.firstName} ${user.lastName}` : ''
+  return user ? `${user.firstName} ${user.lastName}` : t('admin.actions.noLinkedOwner')
 }
 
 function formatDate(isoString) {
@@ -146,6 +150,59 @@ async function handleEditSave(payload) {
   }
 }
 
+// Lifecycle status (draft/published/closed/cancelled) is kept strictly
+// separate from moderation status above — same transition rules and
+// dialog copy as the organizer's own `OrganizerActionCard.vue`, so an
+// admin can never trigger a transition the organizer path would reject.
+function availableTransitions(action) {
+  return allowedNextStatuses(action.organizerStatus).filter(
+    (status) => !(status === ORGANIZER_ACTION_STATUS.PUBLISHED && isPastDate(action.date))
+  )
+}
+function transitionLabel(action, status) {
+  if (action.organizerStatus === ORGANIZER_ACTION_STATUS.CLOSED && status === ORGANIZER_ACTION_STATUS.PUBLISHED) {
+    return t('organizer.card.republish')
+  }
+  if (status === ORGANIZER_ACTION_STATUS.PUBLISHED) return t('organizer.card.publish')
+  if (status === ORGANIZER_ACTION_STATUS.CLOSED) return t('organizer.card.close')
+  return t('organizer.card.cancel')
+}
+function transitionKind(action, status) {
+  if (action.organizerStatus === ORGANIZER_ACTION_STATUS.CLOSED && status === ORGANIZER_ACTION_STATUS.PUBLISHED) {
+    return 'republish'
+  }
+  return status === ORGANIZER_ACTION_STATUS.PUBLISHED ? 'publish' : status === ORGANIZER_ACTION_STATUS.CLOSED ? 'close' : 'cancel'
+}
+
+const transitionTarget = ref(null)
+const transitionLoading = ref(false)
+
+function requestTransition(action, status) {
+  transitionTarget.value = { actionId: action.id, kind: transitionKind(action, status), status }
+}
+
+const transitionActionTitle = computed(() => {
+  if (!transitionTarget.value) return ''
+  const action = actionsStore.actions.find((candidate) => candidate.id === transitionTarget.value.actionId)
+  return action ? title(action) : ''
+})
+
+async function confirmTransition() {
+  if (!transitionTarget.value || transitionLoading.value) return
+  const { actionId, kind, status } = transitionTarget.value
+  transitionLoading.value = true
+  try {
+    await actionsStore.changeLifecycleStatus(actionId, status)
+    notificationsStore.notify(t(`organizer.transitions.success${kind.charAt(0).toUpperCase()}${kind.slice(1)}`), { type: 'success' })
+    transitionTarget.value = null
+  } catch (err) {
+    notificationsStore.notify(t(organizerActionErrorKey(err.message)), { type: 'error' })
+    transitionTarget.value = null
+  } finally {
+    transitionLoading.value = false
+  }
+}
+
 const decisionCopy = {
   approve: { titleKey: 'admin.actions.approveDialog.title', messageKey: 'admin.actions.approveDialog.message', color: 'success' },
   reject: { titleKey: 'admin.actions.rejectDialog.title', messageKey: 'admin.actions.rejectDialog.message', color: 'error' },
@@ -164,7 +221,7 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.actions.pageTitle')" :subtitle="t('admin.actions.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.actions.pageTitle')" :subtitle="t('admin.actions.subtitle')" />
     <AdminNavTabs />
 
     <VTextField
@@ -211,7 +268,15 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
             <VChip v-if="getActionCategory(action.categoryId)" size="small" variant="tonal" :prepend-icon="getActionCategory(action.categoryId).icon">
               {{ t(getActionCategory(action.categoryId).labelKey) }}
             </VChip>
-            <VChip size="small" variant="tonal">{{ t(`organizer.status.${action.organizerStatus}`) }}</VChip>
+            <SignalStatusBadge
+              size="small"
+              :color="action.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED
+                ? 'info'
+                : action.organizerStatus === ORGANIZER_ACTION_STATUS.CANCELLED
+                  ? 'error'
+                  : 'textSecondary'"
+              :label="t(`organizer.status.${action.organizerStatus}`)"
+            />
           </div>
           <AdminStatusChip
             class="mb-2 align-self-start"
@@ -231,6 +296,27 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
             <OHButton size="small" variant="text" prepend-icon="mdi-pencil-outline" @click="openEdit(action)">
               {{ t('admin.common.edit') }}
             </OHButton>
+            <VMenu v-if="availableTransitions(action).length">
+              <template #activator="{ props: menuProps }">
+                <OHButton
+                  v-bind="menuProps"
+                  size="small"
+                  variant="text"
+                  prepend-icon="mdi-swap-horizontal"
+                  :aria-label="t('admin.actions.lifecycleMenuAriaLabel', { title: title(action) })"
+                >
+                  {{ t('admin.actions.lifecycleMenuLabel') }}
+                </OHButton>
+              </template>
+              <VList density="compact">
+                <VListItem
+                  v-for="status in availableTransitions(action)"
+                  :key="status"
+                  :title="transitionLabel(action, status)"
+                  @click="requestTransition(action, status)"
+                />
+              </VList>
+            </VMenu>
             <OHButton
               v-if="action.moderationStatus === ACTION_MODERATION_STATUS.PENDING_REVIEW"
               size="small"
@@ -337,6 +423,15 @@ const confirmLabel = computed(() => (actionDialog.value.decision ? t(`admin.acti
       :reason-label="actionDialog.decision === 'reject' ? t('admin.actions.rejectDialog.reasonLabel') : ''"
       :reason-required="actionDialog.decision === 'reject'"
       @confirm="handleConfirm"
+    />
+
+    <StatusTransitionDialog
+      :model-value="Boolean(transitionTarget)"
+      :transition="transitionTarget?.kind"
+      :action-title="transitionActionTitle"
+      :loading="transitionLoading"
+      @update:model-value="transitionTarget = null"
+      @confirm="confirmTransition"
     />
   </DefaultLayout>
 </template>

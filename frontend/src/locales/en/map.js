@@ -23,6 +23,8 @@ export default {
     title: 'Selected action',
     close: 'Close selected action',
     viewDetails: 'View details',
+    directions: 'Directions',
+    directionsAriaLabel: 'Open directions to "{title}" in Google Maps in a new tab',
     noneTitle: 'No action selected',
     noneMessage: "Select an action on the map or in the list to see its details here."
   },
@@ -43,6 +45,8 @@ export default {
   actionDetails: {
     sectionTitle: 'Location on the map',
     openFullMap: 'Open full map',
+    directions: 'Directions',
+    directionsAriaLabel: 'Open directions to "{title}" in Google Maps in a new tab',
     noCoordinatesNote: "A map isn't available for this action — see its location below."
   },
   organizerForm: {

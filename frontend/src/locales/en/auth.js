@@ -1,4 +1,10 @@
 export default {
+  brandPanel: {
+    loginTitle: 'Help is waiting for someone to say "count me in."',
+    loginMessage: 'Sign in to see actions near you and pick up right where you left off.',
+    registerTitle: 'Become the next link in a chain of help.',
+    registerMessage: 'One simple sign-up connects you with verified organizations and actions that need exactly you.'
+  },
   roles: {
     volunteer: 'Volunteer',
     organizer: 'Organizer',

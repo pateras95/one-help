@@ -7,7 +7,8 @@ import {
   rejectAction as rejectActionRequest,
   hideAction as hideActionRequest,
   restoreAction as restoreActionRequest,
-  updateActionDetails as updateActionDetailsRequest
+  updateActionDetails as updateActionDetailsRequest,
+  changeActionLifecycleStatus as changeActionLifecycleStatusRequest
 } from '../services/actionModeration.service'
 
 /** Owns the admin action-moderation list and its approve/reject/hide/restore actions. */
@@ -70,6 +71,12 @@ export const useAdminActionsStore = defineStore('adminActions', () => {
     return updated
   }
 
+  async function changeLifecycleStatus(actionId, status) {
+    const updated = await changeActionLifecycleStatusRequest(currentAdminId(), actionId, status)
+    replace(updated)
+    return updated
+  }
+
   return {
     actions,
     loading,
@@ -79,6 +86,7 @@ export const useAdminActionsStore = defineStore('adminActions', () => {
     rejectAction,
     hideAction,
     restoreAction,
-    updateActionDetails
+    updateActionDetails,
+    changeLifecycleStatus
   }
 })

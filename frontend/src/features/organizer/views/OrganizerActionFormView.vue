@@ -103,7 +103,7 @@ async function handleSubmit(payload) {
       />
 
       <template v-else-if="organizerStore.selectedAction">
-        <OHPageHeader :title="t('organizer.form.editTitle')" />
+        <OHPageHeader eyebrow="OneHelp" :title="t('organizer.form.editTitle')" />
         <VAlert v-if="formError" type="error" variant="tonal" density="comfortable" class="mb-4" role="alert">
           {{ formError }}
         </VAlert>
@@ -117,7 +117,7 @@ async function handleSubmit(payload) {
     </template>
 
     <template v-else>
-      <OHPageHeader :title="t('organizer.form.createTitle')" />
+      <OHPageHeader eyebrow="OneHelp" :title="t('organizer.form.createTitle')" />
       <VAlert v-if="formError" type="error" variant="tonal" density="comfortable" class="mb-4" role="alert">
         {{ formError }}
       </VAlert>

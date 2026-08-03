@@ -5,6 +5,7 @@ import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -16,6 +17,7 @@ import { useParticipationStore } from '@/features/participation/stores/participa
 import { withOverlaidCount } from '@/features/participation/utils/participationCount'
 import ActionsMap from '@/features/map/components/ActionsMap.vue'
 import { hasValidCoordinates } from '@/features/map/utils/mapCoordinates'
+import { buildDirectionsUrl } from '@/features/map/utils/externalDirections'
 import ReportActionCard from '@/features/actions/components/ReportActionCard.vue'
 
 const { t, locale } = useI18n()
@@ -51,6 +53,11 @@ const formattedDate = computed(() => {
     month: 'long'
   })
   return formatter.format(new Date(displayAction.value.date))
+})
+
+const directionsUrl = computed(() => {
+  if (!displayAction.value || !hasValidCoordinates(displayAction.value)) return null
+  return buildDirectionsUrl(displayAction.value.latitude, displayAction.value.longitude)
 })
 
 function load() {
@@ -93,28 +100,25 @@ watch(() => route.params.actionId, load)
     </EmptyState>
 
     <template v-else>
-      <div class="d-flex align-center flex-wrap ga-2 mb-3">
-        <VChip
-          v-if="category"
-          :color="category.accent"
-          variant="tonal"
-          :prepend-icon="category.icon"
-        >
-          {{ t(category.labelKey) }}
-        </VChip>
-        <VChip size="small" variant="tonal">
-          {{ t(`actions.status.${displayAction.status}`) }}
-        </VChip>
-        <VChip
-          v-if="displayAction.urgency !== 'normal'"
-          size="small"
-          :color="displayAction.urgency === 'urgent' ? 'error' : 'warning'"
-        >
-          {{ t(`actions.urgency.${displayAction.urgency}`) }}
-        </VChip>
+      <div class="d-flex align-center flex-wrap ga-3 mb-4">
+        <div v-if="category" class="oh-icon-well oh-icon-well--lg" :class="`bg-${category.accent}`">
+          <VIcon :icon="category.icon" size="24" color="white" aria-hidden="true" />
+        </div>
+        <div class="d-flex flex-column ga-1">
+          <span v-if="category" class="oh-eyebrow">{{ t(category.labelKey) }}</span>
+          <div class="d-flex flex-wrap ga-2">
+            <SignalStatusBadge color="textSecondary" :label="t(`actions.status.${displayAction.status}`)" />
+            <SignalStatusBadge
+              v-if="displayAction.urgency !== 'normal'"
+              emphasis="solid"
+              :color="displayAction.urgency === 'urgent' ? 'error' : 'warning'"
+              :label="t(`actions.urgency.${displayAction.urgency}`)"
+            />
+          </div>
+        </div>
       </div>
 
-      <h1 class="oh-page-title font-weight-bold text-textPrimary mb-6">
+      <h1 class="oh-headline font-weight-bold text-textPrimary mb-6">
         {{ displayAction.title }}
       </h1>
 
@@ -164,15 +168,27 @@ watch(() => route.params.actionId, load)
               <div class="oh-action-details__mini-map mt-3">
                 <ActionsMap :actions="[displayAction]" />
               </div>
-              <OHButton
-                class="mt-3"
-                variant="text"
-                size="small"
-                prepend-icon="mdi-map-outline"
-                :to="`${ROUTES.MAP}?action=${displayAction.id}`"
-              >
-                {{ t('map.actionDetails.openFullMap') }}
-              </OHButton>
+              <div class="d-flex flex-wrap ga-2 mt-3">
+                <OHButton
+                  variant="text"
+                  size="small"
+                  prepend-icon="mdi-map-outline"
+                  :to="`${ROUTES.MAP}?action=${displayAction.id}`"
+                >
+                  {{ t('map.actionDetails.openFullMap') }}
+                </OHButton>
+                <OHButton
+                  variant="text"
+                  size="small"
+                  prepend-icon="mdi-directions"
+                  :href="directionsUrl"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  :aria-label="t('map.actionDetails.directionsAriaLabel', { title: displayAction.title })"
+                >
+                  {{ t('map.actionDetails.directions') }}
+                </OHButton>
+              </div>
             </template>
             <p v-else class="text-caption text-textSecondary mt-3 mb-0">
               {{ t('map.actionDetails.noCoordinatesNote') }}
@@ -193,6 +209,12 @@ watch(() => route.params.actionId, load)
                 capacity: displayAction.capacity
               }) }}
             </span>
+            <div class="oh-action-details__capacity-track mt-2">
+              <div
+                class="oh-action-details__capacity-fill bg-success"
+                :style="{ width: `${Math.min(100, Math.round((displayAction.registeredCount / displayAction.capacity) * 100))}%` }"
+              />
+            </div>
           </OHCard>
 
           <OHCard v-if="displayAction.organizationDetails" class="pa-5 mt-4">
@@ -231,5 +253,19 @@ watch(() => route.params.actionId, load)
 <style scoped>
 .oh-action-details__mini-map {
   height: 180px;
+  border-radius: var(--oh-radius-md);
+  overflow: hidden;
+}
+
+.oh-action-details__capacity-track {
+  height: 5px;
+  border-radius: 999px;
+  background: rgb(var(--v-theme-border));
+  overflow: hidden;
+}
+
+.oh-action-details__capacity-fill {
+  height: 100%;
+  border-radius: 999px;
 }
 </style>

@@ -11,35 +11,35 @@ export const ACTION_CATEGORIES = [
     labelKey: 'categories.emergency.label',
     descriptionKey: 'categories.emergency.description',
     icon: 'mdi-alert-decagram-outline',
-    accent: 'error'
+    accent: 'categoryEmergency'
   },
   {
     id: 'health',
     labelKey: 'categories.health.label',
     descriptionKey: 'categories.health.description',
     icon: 'mdi-heart-pulse',
-    accent: 'primary'
+    accent: 'categoryHealth'
   },
   {
     id: 'environment',
     labelKey: 'categories.environment.label',
     descriptionKey: 'categories.environment.description',
     icon: 'mdi-leaf',
-    accent: 'success'
+    accent: 'categoryEnvironment'
   },
   {
     id: 'social',
     labelKey: 'categories.social.label',
     descriptionKey: 'categories.social.description',
     icon: 'mdi-hand-heart',
-    accent: 'secondary'
+    accent: 'categorySocial'
   },
   {
     id: 'animals',
     labelKey: 'categories.animals.label',
     descriptionKey: 'categories.animals.description',
     icon: 'mdi-paw',
-    accent: 'warning'
+    accent: 'categoryAnimals'
   }
 ]
 

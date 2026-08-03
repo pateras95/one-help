@@ -6,6 +6,7 @@ import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useOrganizationApplicationStore } from '@/features/organizerApplication/stores/organizationApplication.store'
@@ -51,16 +52,16 @@ async function handleLogout() {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('navigation.account')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('navigation.account')" />
 
     <OHCard v-if="authStore.currentUser" class="pa-6" max-width="480">
       <div class="d-flex align-center ga-4 mb-5">
-        <VAvatar size="56" color="primary">
+        <VAvatar size="56" class="oh-account-avatar">
           <span class="text-h6 font-weight-bold">{{ authStore.currentUser.avatarInitials }}</span>
         </VAvatar>
         <div>
-          <p class="text-subtitle-1 font-weight-bold mb-0">{{ fullName }}</p>
-          <VChip size="small" color="primary" variant="tonal">{{ roleLabel }}</VChip>
+          <p class="text-subtitle-1 font-weight-bold mb-1">{{ fullName }}</p>
+          <SignalStatusBadge color="primary" :label="roleLabel" />
         </div>
       </div>
 
@@ -121,3 +122,10 @@ async function handleLogout() {
     </OHCard>
   </DefaultLayout>
 </template>
+
+<style scoped>
+.oh-account-avatar {
+  background: var(--oh-gradient-brand) !important;
+  color: #fff !important;
+}
+</style>

@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import OHPageHeader from '@/components/common/OHPageHeader.vue'
 import OHButton from '@/components/common/OHButton.vue'
-import OHCard from '@/components/common/OHCard.vue'
+import SignalMetricCard from '@/components/common/SignalMetricCard.vue'
 import LoadingState from '@/components/feedback/LoadingState.vue'
 import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
@@ -80,7 +80,7 @@ const transitionActionTitle = computed(() => {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('organizer.dashboard.title')" :subtitle="t('organizer.dashboard.subtitle')">
+    <OHPageHeader eyebrow="OneHelp" :title="t('organizer.dashboard.title')" :subtitle="t('organizer.dashboard.subtitle')">
       <template #actions>
         <OHButton variant="outlined" prepend-icon="mdi-domain" :to="ROUTES.ORGANIZER_ORGANIZATION">
           {{ t('organizer.dashboard.myOrganization') }}
@@ -101,33 +101,42 @@ const transitionActionTitle = computed(() => {
     />
 
     <template v-else>
-      <VRow class="mb-4">
+      <VRow class="mb-6">
         <VCol cols="6" md="3">
-          <OHCard class="pa-4 text-center">
-            <p class="text-h5 font-weight-bold mb-1">{{ summary.totalActions }}</p>
-            <p class="text-caption text-textSecondary mb-0">{{ t('organizer.dashboard.summary.totalActions') }}</p>
-          </OHCard>
+          <SignalMetricCard
+            :value="summary.totalActions"
+            :label="t('organizer.dashboard.summary.totalActions')"
+            icon="mdi-clipboard-text-outline"
+            color="primary"
+          />
         </VCol>
         <VCol cols="6" md="3">
-          <OHCard class="pa-4 text-center">
-            <p class="text-h5 font-weight-bold mb-1">{{ summary.published }}</p>
-            <p class="text-caption text-textSecondary mb-0">{{ t('organizer.dashboard.summary.published') }}</p>
-          </OHCard>
+          <SignalMetricCard
+            :value="summary.published"
+            :label="t('organizer.dashboard.summary.published')"
+            icon="mdi-check-decagram-outline"
+            color="success"
+          />
         </VCol>
         <VCol cols="6" md="3">
-          <OHCard class="pa-4 text-center">
-            <p class="text-h5 font-weight-bold mb-1">{{ summary.drafts }}</p>
-            <p class="text-caption text-textSecondary mb-0">{{ t('organizer.dashboard.summary.drafts') }}</p>
-          </OHCard>
+          <SignalMetricCard
+            :value="summary.drafts"
+            :label="t('organizer.dashboard.summary.drafts')"
+            icon="mdi-file-edit-outline"
+            color="textSecondary"
+          />
         </VCol>
         <VCol cols="6" md="3">
-          <OHCard class="pa-4 text-center">
-            <p class="text-h5 font-weight-bold mb-1">{{ summary.confirmedParticipants }}</p>
-            <p class="text-caption text-textSecondary mb-0">{{ t('organizer.dashboard.summary.confirmedParticipants') }}</p>
-          </OHCard>
+          <SignalMetricCard
+            :value="summary.confirmedParticipants"
+            :label="t('organizer.dashboard.summary.confirmedParticipants')"
+            icon="mdi-account-group-outline"
+            color="secondary"
+          />
         </VCol>
       </VRow>
 
+      <span class="oh-eyebrow mb-2 d-block">OneHelp</span>
       <h2 class="text-subtitle-1 font-weight-bold mb-3">{{ t('organizer.dashboard.sectionTitle') }}</h2>
 
       <EmptyState

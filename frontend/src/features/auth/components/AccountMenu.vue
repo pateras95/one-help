@@ -75,7 +75,7 @@ async function handleLogout() {
         variant="tonal"
         color="primary"
         size="small"
-        class="oh-account-menu__trigger--compact"
+        class="oh-account-menu__trigger--compact oh-account-menu__avatar"
         :aria-label="`${t('navigation.accountMenuAriaLabel')}: ${fullName}, ${roleLabel}`"
       >
         <span class="text-caption font-weight-bold" aria-hidden="true">
@@ -90,7 +90,7 @@ async function handleLogout() {
         class="oh-account-menu__trigger text-none"
         :aria-label="`${t('navigation.accountMenuAriaLabel')}: ${fullName}, ${roleLabel}`"
       >
-        <VAvatar size="28" color="primary" class="mr-2">
+        <VAvatar size="28" color="primary" class="mr-2 oh-account-menu__avatar">
           <span class="text-caption font-weight-bold" aria-hidden="true">
             {{ authStore.currentUser.avatarInitials }}
           </span>
@@ -203,5 +203,13 @@ async function handleLogout() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* A small brand-gradient fill instead of a flat tonal primary, so the
+   avatar reads as a distinct branded touch rather than a generic
+   default-color Vuetify chip. */
+.oh-account-menu__avatar {
+  background: var(--oh-gradient-brand) !important;
+  color: rgb(var(--v-theme-on-primary)) !important;
 }
 </style>

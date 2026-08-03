@@ -9,7 +9,7 @@ import EmptyState from '@/components/feedback/EmptyState.vue'
 import { PUBLIC_VISIBLE_STATUSES } from '@/features/organizer/utils/organizerActionStatus'
 import { ROLES } from '@/constants/roles'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
-import AdminSummaryCard from '../components/AdminSummaryCard.vue'
+import SignalMetricCard from '@/components/common/SignalMetricCard.vue'
 import { useAdminUsersStore } from '../stores/adminUsers.store'
 import { useAdminOrganizationsStore } from '../stores/adminOrganizations.store'
 import { useAdminActionsStore } from '../stores/adminActions.store'
@@ -107,7 +107,7 @@ function activityTimestamp(entry) {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.dashboard.pageTitle')" :subtitle="t('admin.dashboard.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.dashboard.pageTitle')" :subtitle="t('admin.dashboard.subtitle')" />
     <AdminNavTabs />
 
     <LoadingState v-if="loading" :label="t('admin.common.loading')" />
@@ -115,7 +115,7 @@ function activityTimestamp(entry) {
     <template v-else>
       <VRow>
         <VCol v-for="card in summaryCards" :key="card.label" cols="12" sm="6" md="3">
-          <AdminSummaryCard :label="card.label" :value="card.value" :icon="card.icon" :color="card.color" />
+          <SignalMetricCard :label="card.label" :value="card.value" :icon="card.icon" :color="card.color" />
         </VCol>
       </VRow>
 

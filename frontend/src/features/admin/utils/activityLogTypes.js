@@ -15,7 +15,8 @@ export const ACTIVITY_ACTION_TYPE = {
   ACTION_HIDDEN: 'actionHidden',
   ACTION_RESTORED: 'actionRestored',
   REPORT_STATUS_CHANGED: 'reportStatusChanged',
-  ORGANIZER_DEMOTED: 'organizerDemoted'
+  ORGANIZER_DEMOTED: 'organizerDemoted',
+  ACTION_LIFECYCLE_CHANGED: 'actionLifecycleChanged'
 }
 
 /** What kind of record `targetId` refers to. */

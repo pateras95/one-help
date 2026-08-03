@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
 import OHCard from '@/components/common/OHCard.vue'
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import { getActionCategory } from '@/constants/actionCategories'
 import { isPastDate } from '@/utils/date'
 import { useParticipationStore } from '@/features/participation/stores/participation.store'
@@ -73,75 +74,135 @@ function transitionKind(status) {
 </script>
 
 <template>
-  <OHCard class="pa-5 h-100 d-flex flex-column">
-    <div class="d-flex align-center justify-space-between mb-3 ga-2">
-      <VChip
-        v-if="category"
-        size="small"
-        :color="category.accent"
-        variant="tonal"
-        :prepend-icon="category.icon"
-      >
-        {{ t(category.labelKey) }}
-      </VChip>
-      <VChip size="small" :color="statusColor" variant="tonal">
-        {{ t(`organizer.status.${action.organizerStatus}`) }}
-      </VChip>
-    </div>
+  <OHCard class="oh-action-card oh-card-interactive h-100 d-flex flex-column">
+    <span
+      v-if="category"
+      class="oh-action-card__rail"
+      :class="`bg-${category.accent}`"
+      aria-hidden="true"
+    />
 
-    <h3 class="text-subtitle-1 font-weight-bold mb-2">{{ title }}</h3>
-
-    <div class="d-flex flex-column ga-1 text-body-2 text-textSecondary mb-4">
-      <div class="d-flex align-center ga-2">
-        <VIcon icon="mdi-calendar-blank-outline" size="18" aria-hidden="true" />
-        <span>{{ t('organizer.card.upcomingDate', { date: formattedDate }) }}</span>
+    <div class="oh-action-card__body pa-5 d-flex flex-column flex-grow-1">
+      <div class="d-flex align-center justify-space-between mb-3 ga-2">
+        <div class="d-flex align-center ga-2">
+          <div v-if="category" class="oh-icon-well oh-action-card__category-well" :class="`bg-${category.accent}`">
+            <VIcon :icon="category.icon" size="16" color="white" aria-hidden="true" />
+          </div>
+        </div>
+        <SignalStatusBadge size="small" :color="statusColor" :label="t(`organizer.status.${action.organizerStatus}`)" />
       </div>
-      <div class="d-flex align-center ga-2">
-        <VIcon icon="mdi-account-group-outline" size="18" aria-hidden="true" />
-        <span>{{ t('organizer.card.capacity', { confirmed: confirmedCount, capacity: action.capacity }) }}</span>
+
+      <h3 class="oh-action-card__title font-weight-bold mb-2">{{ title }}</h3>
+
+      <div class="oh-action-card__meta mb-4">
+        <div class="oh-action-card__meta-cell oh-action-card__meta-cell--wide">
+          <VIcon icon="mdi-calendar-blank-outline" size="16" aria-hidden="true" />
+          <span>{{ t('organizer.card.upcomingDate', { date: formattedDate }) }}</span>
+        </div>
+        <div class="oh-action-card__meta-cell oh-action-card__meta-cell--wide">
+          <VIcon icon="mdi-account-group-outline" size="16" aria-hidden="true" />
+          <span>{{ t('organizer.card.capacity', { confirmed: confirmedCount, capacity: action.capacity }) }}</span>
+        </div>
       </div>
-    </div>
 
-    <div class="d-flex flex-wrap ga-2 mt-auto">
-      <VBtn variant="tonal" color="primary" size="small" @click="$emit('view')">
-        {{ t('organizer.card.view') }}
-      </VBtn>
-      <VBtn variant="tonal" size="small" @click="$emit('edit')">
-        {{ t('organizer.card.edit') }}
-      </VBtn>
-      <VBtn variant="tonal" size="small" @click="$emit('participants')">
-        {{ t('organizer.card.participants') }}
-      </VBtn>
-      <VBtn
-        v-if="action.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED"
-        variant="tonal"
-        color="primary"
-        size="small"
-        prepend-icon="mdi-qrcode"
-        @click="$emit('check-in')"
-      >
-        {{ t('attendance.checkIn.pageTitle') }}
-      </VBtn>
+      <div class="oh-action-card__footer d-flex flex-wrap align-content-start ga-2 mt-auto">
+        <VBtn variant="tonal" color="primary" size="small" @click="$emit('view')">
+          {{ t('organizer.card.view') }}
+        </VBtn>
+        <VBtn variant="tonal" size="small" @click="$emit('edit')">
+          {{ t('organizer.card.edit') }}
+        </VBtn>
+        <VBtn variant="tonal" size="small" @click="$emit('participants')">
+          {{ t('organizer.card.participants') }}
+        </VBtn>
+        <VBtn
+          v-if="action.organizerStatus === ORGANIZER_ACTION_STATUS.PUBLISHED"
+          variant="tonal"
+          color="primary"
+          size="small"
+          prepend-icon="mdi-qrcode"
+          @click="$emit('check-in')"
+        >
+          {{ t('attendance.checkIn.pageTitle') }}
+        </VBtn>
 
-      <VMenu v-if="availableTransitions.length">
-        <template #activator="{ props: menuProps }">
-          <VBtn
-            v-bind="menuProps"
-            icon="mdi-dots-vertical"
-            size="small"
-            variant="text"
-            :aria-label="t('organizer.card.actionsMenuAriaLabel', { title })"
-          />
-        </template>
-        <VList density="compact">
-          <VListItem
-            v-for="status in availableTransitions"
-            :key="status"
-            :title="transitionLabel(status)"
-            @click="$emit('transition', { kind: transitionKind(status), status })"
-          />
-        </VList>
-      </VMenu>
+        <VMenu v-if="availableTransitions.length">
+          <template #activator="{ props: menuProps }">
+            <VBtn
+              v-bind="menuProps"
+              icon="mdi-dots-vertical"
+              size="small"
+              variant="text"
+              :aria-label="t('organizer.card.actionsMenuAriaLabel', { title })"
+            />
+          </template>
+          <VList density="compact">
+            <VListItem
+              v-for="status in availableTransitions"
+              :key="status"
+              :title="transitionLabel(status)"
+              @click="$emit('transition', { kind: transitionKind(status), status })"
+            />
+          </VList>
+        </VMenu>
+      </div>
     </div>
   </OHCard>
 </template>
+
+<style scoped>
+.oh-action-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.oh-action-card__rail {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  z-index: 1;
+}
+
+.oh-action-card__body {
+  padding-inline-start: calc(var(--oh-space-lg) + 4px);
+}
+
+.oh-action-card__category-well {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+}
+
+/* The management-button row can wrap to a second line depending on how
+   many actions apply to this action's status (e.g. a published action
+   also offers check-in). Reserving room for the worst case keeps the
+   gap above this row consistent across every card in the grid. */
+.oh-action-card__footer {
+  min-height: 64px;
+}
+
+.oh-action-card__title {
+  min-height: 3.5rem;
+  font-size: 1.0625rem;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.oh-action-card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8125rem;
+  color: rgb(var(--v-theme-textSecondary));
+}
+
+.oh-action-card__meta-cell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+</style>

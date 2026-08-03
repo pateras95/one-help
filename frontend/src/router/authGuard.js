@@ -41,5 +41,14 @@ export async function authGuard(to) {
     return { path: ROUTES.UNAUTHORIZED }
   }
 
+  // An organizer already owns exactly one organization (the permanent
+  // 1:1 rule) — the application/onboarding screen has nothing left for
+  // them to do and must never be reachable once that role is granted,
+  // regardless of how the link was reached (menu, direct URL, back/
+  // forward navigation).
+  if (to.path === ROUTES.BECOME_ORGANIZER && authStore.hasRole(ROLES.ORGANIZER)) {
+    return { path: ROUTES.ORGANIZER }
+  }
+
   return true
 }

@@ -50,7 +50,7 @@ function formatTimestamp(isoString) {
 
 <template>
   <DefaultLayout>
-    <OHPageHeader :title="t('admin.activity.pageTitle')" :subtitle="t('admin.activity.subtitle')" />
+    <OHPageHeader eyebrow="OneHelp" :title="t('admin.activity.pageTitle')" :subtitle="t('admin.activity.subtitle')" />
     <AdminNavTabs />
 
     <LoadingState v-if="loading" :label="t('admin.common.loading')" />
@@ -70,12 +70,27 @@ function formatTimestamp(isoString) {
     />
 
     <OHCard v-else class="pa-0">
-      <VList :aria-label="t('admin.activity.pageTitle')">
+      <VList :aria-label="t('admin.activity.pageTitle')" density="comfortable">
         <template v-for="(entry, index) in entries" :key="entry.id">
           <VDivider v-if="index > 0" />
-          <VListItem :title="activityText(entry)" :subtitle="formatTimestamp(entry.timestamp)" />
+          <VListItem class="py-2">
+            <template #prepend>
+              <div class="oh-icon-well oh-activity__well bg-surfaceOperational mr-1">
+                <VIcon icon="mdi-history" size="18" color="textSecondary" aria-hidden="true" />
+              </div>
+            </template>
+            <VListItemTitle class="text-body-2">{{ activityText(entry) }}</VListItemTitle>
+            <VListItemSubtitle class="text-caption">{{ formatTimestamp(entry.timestamp) }}</VListItemSubtitle>
+          </VListItem>
         </template>
       </VList>
     </OHCard>
   </DefaultLayout>
 </template>
+
+<style scoped>
+.oh-activity__well {
+  width: 36px;
+  height: 36px;
+}
+</style>

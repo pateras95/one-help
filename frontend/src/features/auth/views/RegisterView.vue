@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute, useRouter } from 'vue-router'
 import AuthLayout from '@/layouts/AuthLayout.vue'
-import OHLogo from '@/components/common/OHLogo.vue'
+import OHCard from '@/components/common/OHCard.vue'
 import OHButton from '@/components/common/OHButton.vue'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { useNotificationsStore } from '@/stores/notifications.store'
@@ -86,9 +86,9 @@ async function handleSubmit() {
 </script>
 
 <template>
-  <AuthLayout>
-    <div class="text-center mb-6">
-      <OHLogo class="justify-center mb-4" />
+  <AuthLayout :panel-title="t('auth.brandPanel.registerTitle')" :panel-message="t('auth.brandPanel.registerMessage')">
+    <OHCard class="pa-6 pa-sm-8">
+    <div class="mb-6">
       <h1 class="oh-page-title font-weight-bold text-textPrimary">{{ t('navigation.register') }}</h1>
       <p class="text-body-2 text-textSecondary mt-1">{{ t('auth.register.subtitle') }}</p>
     </div>
@@ -196,5 +196,6 @@ async function handleSubmit() {
       {{ t('auth.register.organizerNote') }}
       <RouterLink :to="ROUTES.BECOME_ORGANIZER" class="font-weight-bold">{{ t('auth.register.organizerNoteLink') }}</RouterLink>
     </p>
+    </OHCard>
   </AuthLayout>
 </template>

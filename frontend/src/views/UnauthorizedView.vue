@@ -13,6 +13,7 @@ const { t } = useI18n()
       :title="t('auth.unauthorized.title')"
       :message="t('auth.unauthorized.message')"
       icon="mdi-shield-alert-outline"
+      tone="restricted"
     >
       <VBtn class="mt-4" color="primary" :to="ROUTES.HOME">
         {{ t('auth.unauthorized.backHome') }}

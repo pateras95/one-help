@@ -142,6 +142,7 @@ onMounted(() => {
     </template>
 
     <template v-else>
+      <span class="oh-eyebrow mb-2 d-block">OneHelp</span>
       <h1 class="oh-page-title font-weight-bold text-textPrimary mb-1">{{ t('attendance.scan.pageTitle') }}</h1>
       <p class="text-body-2 text-textSecondary mb-6">{{ t('attendance.scan.subtitle') }}</p>
 
@@ -259,7 +260,7 @@ onMounted(() => {
 .oh-qr-scanner {
   max-width: 360px;
   margin: 0 auto;
-  border-radius: 8px;
+  border-radius: var(--oh-radius-md);
   overflow: hidden;
 }
 </style>

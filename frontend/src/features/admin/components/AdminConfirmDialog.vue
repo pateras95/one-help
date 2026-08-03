@@ -72,16 +72,18 @@ function confirm() {
     <VCard>
       <VCardTitle>{{ title }}</VCardTitle>
       <VCardText>
-        <p class="mb-0">{{ message }}</p>
-        <VTextarea
-          v-if="reasonLabel"
-          v-model="reason"
-          class="mt-4"
-          :label="reasonLabel"
-          variant="outlined"
-          rows="3"
-          auto-grow
-        />
+        <div :class="confirmColor === 'error' ? 'oh-panel oh-panel--danger pa-4' : ''">
+          <p class="mb-0">{{ message }}</p>
+          <VTextarea
+            v-if="reasonLabel"
+            v-model="reason"
+            class="mt-4"
+            :label="reasonLabel"
+            variant="outlined"
+            rows="3"
+            auto-grow
+          />
+        </div>
       </VCardText>
       <VCardActions>
         <VSpacer />

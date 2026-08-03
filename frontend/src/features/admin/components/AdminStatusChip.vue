@@ -1,8 +1,13 @@
 <script setup>
+import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
+
 /**
  * Renders any admin status (account, organization, moderation, report)
- * as an icon + text chip — status is never communicated by color alone,
- * so every call site must pass both a translated `label` and an `icon`.
+ * via the shared Signal status badge (a color dot + translated label) —
+ * status is never communicated by color alone, since the label text is
+ * always present. `icon` is still accepted so every call site keeps
+ * passing one (kept for backward compatibility / possible future use),
+ * but the badge language itself uses a dot, not an icon.
  */
 defineProps({
   label: {
@@ -25,7 +30,5 @@ defineProps({
 </script>
 
 <template>
-  <VChip :color="color" :size="size" variant="tonal" :prepend-icon="icon">
-    {{ label }}
-  </VChip>
+  <SignalStatusBadge :label="label" :color="color" :size="size === 'small' ? 'small' : 'default'" />
 </template>

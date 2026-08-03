@@ -1,11 +1,15 @@
 export default {
   hero: {
+    eyebrow: 'Volunteering · Community · Trust',
     headline: 'Help starts with one person.',
     lead: 'OneHelp connects people with verified volunteering actions near them — in health, the environment, social support and emergency response.',
     primaryCta: 'See the actions',
     primaryCtaAriaLabel: 'See the available volunteering actions',
     secondaryCta: 'Learn more',
-    secondaryCtaAriaLabel: 'Learn more about OneHelp'
+    secondaryCtaAriaLabel: 'Learn more about OneHelp',
+    trust1: 'Verified organizations',
+    trust2: 'Instant participation',
+    trust3: 'No cost to join'
   },
   categories: {
     title: 'Volunteering categories',
