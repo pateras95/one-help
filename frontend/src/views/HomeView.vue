@@ -112,11 +112,12 @@ function categoryTarget(categoryId) {
           </template>
 
           <!-- Health: Emergency's rich solid-field recipe in its own hue,
-               mirrored (watermark top-left, icon well bottom-right) so it
-               reads as the same family without being a literal copy. -->
+               same top-anchored flow as Social/Animals below (icon well,
+               then label, then description) so it belongs to the same
+               family, with the ghost watermark in the opposite corner for
+               its own identity. -->
           <template v-else-if="TILE_LAYOUTS[index] === 'health'">
-            <VIcon :icon="category.icon" size="104" class="oh-category-tile__watermark oh-category-tile__watermark--health" aria-hidden="true" />
-            <div class="oh-category-tile__spacer" />
+            <VIcon :icon="category.icon" size="88" class="oh-category-tile__watermark oh-category-tile__watermark--health" aria-hidden="true" />
             <div class="oh-icon-well oh-icon-well--lg bg-white">
               <VIcon :icon="category.icon" size="30" :color="category.accent" aria-hidden="true" />
             </div>
@@ -124,19 +125,18 @@ function categoryTarget(categoryId) {
             <p class="text-body-2 oh-category-tile__description mb-0">{{ t(category.descriptionKey) }}</p>
           </template>
 
-          <!-- Environment: the same solid-field richness, centered instead
-               of left-anchored, with a dashed halo behind the icon for an
-               organic/growth feel distinct from Health's composition. -->
+          <!-- Environment: the same solid-field richness and the same
+               top-anchored flow as every other tile, just horizontally
+               centered with a dashed halo behind the icon for an organic
+               feel distinct from Health's composition. -->
           <template v-else-if="TILE_LAYOUTS[index] === 'environment'">
-            <div class="oh-category-tile__center">
-              <div class="oh-category-tile__halo">
-                <div class="oh-icon-well oh-icon-well--lg bg-white">
-                  <VIcon :icon="category.icon" size="30" :color="category.accent" aria-hidden="true" />
-                </div>
+            <div class="oh-category-tile__halo">
+              <div class="oh-icon-well oh-icon-well--lg bg-white">
+                <VIcon :icon="category.icon" size="30" :color="category.accent" aria-hidden="true" />
               </div>
-              <p class="oh-category-tile__label font-weight-bold mt-4 mb-1">{{ t(category.labelKey) }}</p>
-              <p class="text-body-2 oh-category-tile__description mb-0">{{ t(category.descriptionKey) }}</p>
             </div>
+            <p class="oh-category-tile__label font-weight-bold mt-3 mb-1">{{ t(category.labelKey) }}</p>
+            <p class="text-body-2 oh-category-tile__description mb-0">{{ t(category.descriptionKey) }}</p>
           </template>
 
           <!-- Corner: a large ghost icon watermark behind standard content. -->
@@ -249,6 +249,16 @@ function categoryTarget(categoryId) {
   }
 }
 
+/* A little of the copy column's own breathing room, independent of the
+   page container's gutter, so it doesn't read as flush against the
+   edge on wide desktop viewports. */
+@media (min-width: 960px) {
+  .oh-hero__copy {
+    padding-inline-start: var(--oh-space-lg);
+    padding-block: var(--oh-space-sm);
+  }
+}
+
 /* A quiet, on-brand seam between the hero and the next section — a
    thin gradient rule with a single coral spark at its center, echoing
    the logo's handoff motif, rather than a heavy border. */
@@ -350,8 +360,20 @@ function categoryTarget(categoryId) {
   box-shadow: var(--oh-shadow-md);
 }
 
+/* Every tile's icon well/label/description keeps its natural size in
+   the fixed-height grid row — without this, a flex column's default
+   `min-height: auto` lets the browser shrink (even crush to nothing) a
+   clamped paragraph instead of honoring its line-clamp. */
+.oh-category-tile > * { flex-shrink: 0; }
+
 .oh-category-tile__label { font-size: 1.0625rem; }
-.oh-category-tile__description { max-width: 32ch; }
+.oh-category-tile__description {
+  max-width: 32ch;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
 
 /* Featured */
 .oh-category-tile--featured {
@@ -385,27 +407,26 @@ function categoryTarget(categoryId) {
 .oh-category-tile--health .oh-category-tile__description,
 .oh-category-tile--environment .oh-category-tile__description { color: rgba(255, 255, 255, 0.85); }
 
-.oh-category-tile__spacer { flex: 1 1 auto; }
-
 .oh-category-tile__watermark--health {
-  left: -14px;
-  top: -14px;
-  right: auto;
+  right: -12px;
+  top: -12px;
   bottom: auto;
   opacity: 0.14;
 }
 
-.oh-category-tile--environment { display: flex; }
-.oh-category-tile__center {
-  margin: auto;
-  text-align: center;
-  display: flex;
-  flex-direction: column;
+/* Environment: horizontally centered, but still anchored to the top of
+   the card's own padding like every other tile — only the alignment
+   axis differs, not the vertical rhythm. */
+.oh-category-tile--environment {
   align-items: center;
+  text-align: center;
+}
+.oh-category-tile--environment .oh-category-tile__description {
+  max-width: 26ch;
 }
 .oh-category-tile__halo {
-  position: relative;
-  padding: 10px;
+  display: inline-flex;
+  padding: 5px;
   border-radius: 50%;
   border: 2px dashed rgba(255, 255, 255, 0.35);
 }
