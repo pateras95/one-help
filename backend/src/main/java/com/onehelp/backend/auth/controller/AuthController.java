@@ -36,8 +36,9 @@ import org.springframework.web.bind.annotation.RestController;
 /**
  * Registration, login, refresh, logout, and current-user — the authentication
  * foundation (ADR-1). Every response follows dto-catalogue.md exactly: the refresh
- * token is never a JSON field, only a {@code Set-Cookie} scoped to this controller's
- * {@code /refresh} path.
+ * token is never a JSON field, only a {@code Set-Cookie} scoped to
+ * {@link #REFRESH_COOKIE_PATH} (this whole controller) so both {@code /refresh} and
+ * {@code /logout} receive it from the browser.
  */
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -45,7 +46,16 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private static final String REFRESH_COOKIE_NAME = "refreshToken";
-    private static final String REFRESH_COOKIE_PATH = "/api/v1/auth/refresh";
+    /**
+     * Scoped to the whole {@code auth} controller, not just {@code /refresh} —
+     * browsers only ever attach a cookie to requests whose path starts with the
+     * cookie's {@code Path} attribute. A narrower {@code /api/v1/auth/refresh} scope
+     * means the browser never sends the cookie to {@code POST /api/v1/auth/logout} at
+     * all, so logout could never revoke it. {@code /api/v1/auth} is still narrow
+     * enough that the cookie is never sent to {@code /register}, {@code /login}, or
+     * {@code /me} (none of which need it), while covering both endpoints that do.
+     */
+    private static final String REFRESH_COOKIE_PATH = "/api/v1/auth";
     private static final String USER_AGENT_HEADER = "User-Agent";
 
     private final AuthenticationService authenticationService;
@@ -134,7 +144,8 @@ public class AuthController {
             summary = "Rotate the refresh token and issue a new access token",
             description = "Reads the refreshToken cookie — no request body. Every call revokes the "
                     + "presented token and issues a new one (rotation); presenting an already-revoked "
-                    + "(reused) token revokes the caller's entire session chain.")
+                    + "(reused) token revokes the caller's entire session chain. The cookie is scoped "
+                    + "to /api/v1/auth, so it is also sent to /auth/logout.")
     @ApiResponses({
         @ApiResponse(
                 responseCode = "200",

@@ -4,51 +4,25 @@ import {
   login as loginRequest,
   register as registerRequest,
   logout as logoutRequest,
-  getCurrentSession
+  refreshSession as refreshSessionRequest,
+  getCurrentSession as getCurrentSessionRequest
 } from '../services/auth.service'
-
-const SESSION_STORAGE_KEY = 'onehelp.auth.session'
-
-function readStoredSession() {
-  try {
-    const raw = window.localStorage.getItem(SESSION_STORAGE_KEY)
-    if (!raw) return null
-    const parsed = JSON.parse(raw)
-    if (!parsed || typeof parsed.userId !== 'string' || !parsed.userId) return null
-    return parsed
-  } catch {
-    // Malformed JSON or localStorage unavailable — treat as no session.
-    return null
-  }
-}
-
-function writeStoredSession(session) {
-  try {
-    window.localStorage.setItem(SESSION_STORAGE_KEY, JSON.stringify(session))
-  } catch {
-    // Ignore write failures — persistence is a nice-to-have, not required
-    // for the app to function (same approach as the locale store).
-  }
-}
-
-function clearStoredSession() {
-  try {
-    window.localStorage.removeItem(SESSION_STORAGE_KEY)
-  } catch {
-    // Ignore.
-  }
-}
+import { setAccessToken, clearAccessToken, setSessionHandlers, getAccessToken } from '@/services/authSession'
 
 /**
- * Owns the mocked auth session: current user, loading/error state, and
- * login/register/logout. Persists only `{ userId, issuedAt }` — never a
- * password or raw credentials — and re-validates it against the mock
- * user "database" on boot via `getCurrentSession`, mirroring how a real
- * app would re-check a session cookie/token rather than trusting
- * whatever's in storage at face value.
+ * Owns the real auth session: current user, in-memory access token, loading/error
+ * state, and login/register/logout/session-restoration. The backend is now the
+ * source of truth (ADR-1) — nothing about the session is persisted to
+ * localStorage/sessionStorage/IndexedDB or a frontend-created cookie; the access
+ * token lives only in this store's reactive state (mirrored into `authSession.js`
+ * for the HTTP layer) and is gone on every page reload by design. Session
+ * restoration after a reload goes through the browser's own HttpOnly refresh
+ * cookie instead — see `initializeSession()`.
  */
 export const useAuthStore = defineStore('auth', () => {
   const currentUser = ref(null)
+  const accessToken = ref(null)
+  const expiresIn = ref(null)
   const isInitialized = ref(false)
   const loading = ref(false)
   const error = ref(null)
@@ -66,34 +40,48 @@ export const useAuthStore = defineStore('auth', () => {
     error.value = null
   }
 
-  async function runInitialization() {
-    const stored = readStoredSession()
-    if (!stored) {
-      // Covers both "nothing stored" and "unparsable/malformed JSON" —
-      // `readStoredSession` returns `null` for either. Clearing here too
-      // (not just in the catch below) makes sure garbage left over from
-      // a malformed value actually gets removed, not just ignored.
-      clearStoredSession()
-      isInitialized.value = true
-      return
-    }
+  /** @param {{accessToken: string|null, expiresIn: number|null, user: Object}} session */
+  function hydrateSession(session) {
+    currentUser.value = session.user
+    accessToken.value = session.accessToken
+    expiresIn.value = session.expiresIn
+    setAccessToken(session.accessToken)
+  }
 
+  /**
+   * Clears every piece of session state at once, in memory only — this is the one
+   * place "log the user out" happens, so switching users (or losing a session)
+   * never leaves a stale field from the previous user behind.
+   */
+  function clearSession() {
+    currentUser.value = null
+    accessToken.value = null
+    expiresIn.value = null
+    clearAccessToken()
+  }
+
+  async function runInitialization() {
     try {
-      currentUser.value = await getCurrentSession(stored.userId)
+      // One silent POST /auth/refresh, not GET /auth/me first: there is no
+      // in-memory access token yet on a fresh page load, so calling /auth/me
+      // first would be a guaranteed, pointless 401 (Part 10) — the refresh
+      // cookie alone is enough to attempt restoration directly.
+      const session = await refreshSessionRequest()
+      hydrateSession(session)
     } catch {
-      // Stale or otherwise invalid session — clear it rather than
-      // leaving the app in a half-authenticated state.
-      clearStoredSession()
-      currentUser.value = null
+      // No valid refresh cookie (never logged in, already logged out, or the
+      // session genuinely expired) — remain logged out, silently, no error
+      // snackbar; this is the expected state for most page loads.
+      clearSession()
     } finally {
       isInitialized.value = true
     }
   }
 
   /**
-   * Restores a persisted session, if any. Safe to call repeatedly (e.g.
-   * once from `main.js` at boot and again from the router guard) — every
-   * caller awaits the same underlying run.
+   * Restores a session from the refresh cookie, if any. Safe to call repeatedly
+   * (e.g. once from `main.js` at boot and again from the router guard) — every
+   * caller awaits the same underlying run, and it only ever runs once.
    */
   function initializeSession() {
     if (!initPromise) {
@@ -106,10 +94,9 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const user = await loginRequest(email, password)
-      currentUser.value = user
-      writeStoredSession({ userId: user.id, issuedAt: new Date().toISOString() })
-      return user
+      const session = await loginRequest(email, password)
+      hydrateSession(session)
+      return session.user
     } catch (err) {
       error.value = err.message
       throw err
@@ -122,10 +109,9 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const user = await registerRequest(payload)
-      currentUser.value = user
-      writeStoredSession({ userId: user.id, issuedAt: new Date().toISOString() })
-      return user
+      const session = await registerRequest(payload)
+      hydrateSession(session)
+      return session.user
     } catch (err) {
       error.value = err.message
       throw err
@@ -134,37 +120,52 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  /**
+   * Always clears local state, even if the backend call itself fails (an
+   * already-expired access token, or the backend being briefly unreachable, must
+   * never leave the frontend appearing logged in).
+   */
   async function logout() {
-    await logoutRequest()
-    currentUser.value = null
-    clearStoredSession()
+    try {
+      await logoutRequest()
+    } finally {
+      clearSession()
+    }
   }
 
   /**
-   * Re-fetches the current user from the mock "database" and updates
-   * `currentUser` in place, without touching the stored session or
-   * redirecting anywhere. Used after an action taken elsewhere (e.g. an
-   * admin approving this same user's organizer application) may have
-   * changed their role/status — lets the already-open tab reflect it
-   * immediately (nav, guards) without requiring a manual logout/login,
-   * as long as the user revisits/refreshes the relevant screen. This is
-   * not live cross-tab sync — a real backend would push this via a
-   * session refresh or websocket; here it's an explicit, safe refetch.
+   * Re-fetches the current user (`GET /auth/me`) and updates `currentUser` in
+   * place, without touching `isAuthenticated`'s underlying session or redirecting
+   * anywhere. Used after an action taken elsewhere (e.g. an admin approving this
+   * same user's organizer application) may have changed their role/status.
    */
   async function refreshCurrentUser() {
     if (!currentUser.value) return
     try {
-      currentUser.value = await getCurrentSession(currentUser.value.id)
+      currentUser.value = await getCurrentSessionRequest()
     } catch {
-      // Session no longer valid (e.g. suspended in the meantime) — same
-      // handling as a failed boot-time initialization.
-      currentUser.value = null
-      clearStoredSession()
+      clearSession()
     }
   }
 
+  // Wires the HTTP layer's own silent-refresh interceptor (`services/http.js`)
+  // back into this store's reactive state, without `http.js` ever importing this
+  // store — see `services/authSession.js` for why.
+  setSessionHandlers({
+    onSessionRefreshed(user, newExpiresIn) {
+      currentUser.value = user
+      accessToken.value = getAccessToken()
+      expiresIn.value = newExpiresIn
+    },
+    onSessionExpired() {
+      clearSession()
+    }
+  })
+
   return {
     currentUser,
+    accessToken,
+    expiresIn,
     isAuthenticated,
     isInitialized,
     loading,

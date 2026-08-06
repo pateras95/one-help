@@ -1,8 +1,11 @@
 # API Integration — Authentication
 
-Implemented in `docs/reports/2026-08-06-authentication-foundation.md`. This document
-is the frontend-integration reference for that work: exact contracts, DB shape, and
-the concrete migration steps for replacing the mocked authentication feature.
+Backend implemented in `docs/reports/2026-08-06-authentication-foundation.md`; wired
+up to the real frontend in `docs/reports/2026-08-06-authentication-frontend-integration.md`.
+This document describes the **final, actually-implemented** frontend/backend
+authentication contract — not a proposal. As of the frontend-integration phase,
+`features/auth/services/auth.service.js` calls every endpoint below for real
+(`VITE_DATA_SOURCE=api`); every other domain remains mocked.
 
 ---
 
@@ -83,17 +86,33 @@ No request body. The refresh endpoint reads the `refreshToken` cookie automatica
 **There is no `refreshToken` field.** It is delivered exclusively via:
 
 ```
-Set-Cookie: refreshToken=<opaque-value>; Path=/api/v1/auth/refresh; HttpOnly; SameSite=Strict[; Secure]
+Set-Cookie: refreshToken=<opaque-value>; Path=/api/v1/auth; HttpOnly; SameSite=Strict[; Secure]
 ```
 
-**This is a deliberate deviation from the task brief's literal wording**, confirmed
-with the product owner before implementation: the already-approved
+**This is a deliberate deviation from the original task brief's literal wording**,
+confirmed with the product owner before implementation: the already-approved
 `docs/backend-architecture/security-and-authentication.md`/`dto-catalogue.md` design
 (built in the prior backend-foundation phase, with `CorsProperties.allowCredentials`
 and the `refresh_tokens` schema already scaffolded specifically for this) keeps the
-refresh token out of JS-reachable storage entirely. Frontend implication below.
+refresh token out of JS-reachable storage entirely.
+
+**Cookie path corrected in the frontend-integration phase**: originally
+`Path=/api/v1/auth/refresh`. A browser only ever attaches a cookie to a request whose
+path starts with the cookie's own `Path` — that narrower scope meant the cookie was
+never sent to `POST /api/v1/auth/logout` at all, so logout could never revoke it.
+Widened to `/api/v1/auth` (covers `/refresh` and `/logout`, still excludes
+`/register`/`/login`/`/me`, which never need it) — see `AuthController.REFRESH_COOKIE_PATH`.
 
 `expiresIn` is seconds (900 = 15 minutes), not a timestamp.
+
+**Casing note (frontend consumers only)**: `role`/`status` are serialized as the Java
+enum's `name()` — uppercase (`"VOLUNTEER"`, `"ACTIVE"`). The frontend's own
+`ROLES`/`ACCOUNT_STATUS` vocabulary has always been lowercase
+(`constants/roles.js`/`admin/utils/accountStatus.js`) — a real, browser-discovered bug
+during integration (every role check silently failed post-login) fixed by normalizing
+to lowercase in `frontend/src/services/normalizeApiUser.js`, applied at every point a
+backend user object enters the app. The wire format documented here is the backend's
+actual, unchanged response — normalization is a frontend-only concern.
 
 ### `CurrentUserResponse` (`GET /auth/me`)
 
@@ -175,10 +194,16 @@ value exists only in the cookie.
    refresh token for that user in one statement, logs a `WARN`, and returns
    `auth.invalidSession` (401). The caller must log in again from scratch.
 4. **Revoked on logout**: only the presented token, only if it belongs to the
-   authenticated caller.
-5. **Cookie attributes**: `HttpOnly`, `SameSite=Strict`, `Path=/api/v1/auth/refresh`
-   (never sent to any other endpoint), `Secure` (true except in local/test config,
-   where plain HTTP is used).
+   authenticated caller — the browser sends it automatically since the cookie's
+   `Path=/api/v1/auth` covers `/auth/logout` (see the correction note above).
+5. **Cookie attributes**: `HttpOnly`, `SameSite=Strict`, `Path=/api/v1/auth` (covers
+   `/refresh` and `/logout` only), `Secure` (true except in local/test config, where
+   plain HTTP is used — `onehelp.security.refresh-cookie-secure` in
+   `application-local.yml`/`application-test.yml`). Logout's clearing `Set-Cookie`
+   mirrors every one of these attributes exactly (name, path, `HttpOnly`,
+   `SameSite=Strict`) plus `Max-Age=0` — browsers only overwrite/delete a cookie when
+   name+path match exactly, so a mismatched clearing cookie would leave the original
+   lingering.
 
 ---
 
@@ -235,107 +260,156 @@ optionally points to the token that replaced it.
 
 ---
 
-## Frontend Files That Currently Use Mocks
+## Final Frontend Implementation
+
+### Files created
 
 | File | Role |
 |---|---|
-| `frontend/src/features/auth/services/auth.service.js` | The entire mock implementation — `login`, `register`, `logout`, `getCurrentSession`, `getUserById`, `getAllUsers`. **This file is what gets replaced.** |
-| `frontend/src/features/auth/mocks/users.mock.js` | The 3 fixture accounts + `DEMO_CREDENTIALS` (shown on the login screen). Stays as a dev convenience or is removed — the backend has no equivalent seed data yet. |
-| `frontend/src/features/auth/mocks/userRole.storage.js`, `userProfileOverride.storage.js` | localStorage overlays simulating role/profile mutation. No longer needed once `role`/profile fields live directly on the real `users` row. |
-| `frontend/src/features/auth/stores/auth.store.js` | Calls `auth.service.js`'s functions and persists `{userId, issuedAt}` to `localStorage`. **Function signatures should stay the same** (per `frontend-backend-replacement-map.md`'s explicit goal), but the persisted-session shape must change (see below). |
-| `frontend/src/features/admin/mocks/userStatus.storage.js` | Separate mock overlay for account status — the real `users.status` column already merges this into `CurrentUserResponse.status`, so this overlay disappears entirely, not just its auth-facing read path. |
+| `frontend/src/services/authSession.js` | In-memory-only access-token holder + a small handler-registration seam, so `http.js` never imports the Pinia store directly (avoids a `http.js` → `auth.store.js` → `auth.service.js` → `http.js` circular import). |
+| `frontend/src/services/normalizeApiUser.js` | Lowercases `role`/`status` on any backend user object — see the casing note under § Response DTOs. Shared by `auth.service.js` and `http.js`'s own refresh call. |
 
-## Frontend Files That Must Later Call the Real Backend
+### Files modified
 
-These don't call `auth.service.js` for login/session directly, but consume its
-**read** functions (`getUserById`, `getAllUsers`) and must be repointed once those
-functions call the real `GET /api/v1/users/{id}` / `GET /api/v1/admin/users`
-equivalents (not built in this phase — only auth's own five endpoints exist so far):
+| File | What changed |
+|---|---|
+| `frontend/src/services/http.js` | `withCredentials: true`; a request interceptor attaching `Authorization: Bearer <token>`; a single-flight response interceptor that silently refreshes on an eligible 401 and retries once (see § Interceptor Behavior). `extractApiError()` added for stable error-code extraction. |
+| `frontend/src/features/auth/services/auth.service.js` | Real `apiLogin`/`apiRegister`/`apiLogout`/`apiRefreshSession`/`apiGetCurrentSession` added, each used when `VITE_DATA_SOURCE=api` (the default). `getUserById`/`getAllUsers` **intentionally left on the mock** — see § Mock Functions Retained. |
+| `frontend/src/features/auth/stores/auth.store.js` | Rewritten session model — see § Session Model below. |
+| `frontend/vite.config.js` | Dev server pinned to port `5173` (was `8080`, colliding with the backend). |
+| `frontend/.env.example` | Documents `VITE_DATA_SOURCE`. |
+| `frontend/src/features/auth/views/LoginView.vue`, `RegisterView.vue` | Duplicate-submission guard; `LoginView.vue`'s demo-credentials panel replaced with a translated note in API mode (§ Demo Credentials); `RegisterView.vue` re-runs client validation on a `validation.failed` response rather than ever showing raw backend text. |
+| `frontend/src/locales/{en,el}/auth.js` | Added `login.apiModeNote`, `login.sessionNoteApi`. |
+| `claude.md` | Corrected the now-stale "frontend-only, no real API endpoints" framing — targeted, not a rewrite (see the phase report). |
 
-- `frontend/src/features/organizer/services/organizerActions.service.js` (`getUserById`)
-- `frontend/src/features/admin/views/AdminReportsView.vue` (`getUserById`, direct import)
-- `frontend/src/features/admin/services/adminUsers.service.js` (`getAllUsers`, `getUserById`)
-- `frontend/src/features/admin/views/AdminActionsView.vue`,
-  `AdminOrganizationsView.vue` (`getAllUsers`, direct import)
-- `frontend/src/features/organizerApplication/utils/organizationIntegrity.js` (`getAllUsers`)
+### Files intentionally NOT removed
 
-Every other file that reads the current user goes through `useAuthStore()`
-(`currentUser`, `isAuthenticated`, `hasRole`) — none of those call sites need to
-change; only `auth.store.js`'s internals do. Consumers, per `service-contracts.md`:
-`components/layout/AppNavigation.vue`, `AppBottomNavigation.vue`,
-`features/actions/components/{ActionCard,ReportActionCard}.vue`, every `admin*.store.js`,
-`features/auth/{components/AccountMenu.vue,views/AccountView.vue,views/LoginView.vue,views/RegisterView.vue}`,
-`features/attendance/{stores/attendance.store.js,views/CheckInView.vue}`,
-`features/organizerApplication/{stores/organizationApplication.store.js,views/BecomeOrganizerView.vue}`,
-`features/organizer/{stores/organizer.store.js,views/OrganizerOrganizationView.vue}`,
-`features/participation/{components/ParticipationPanel.vue,stores/participation.store.js}`,
-`main.js`, `router/authGuard.js`.
+`frontend/src/features/auth/mocks/userRole.storage.js`,
+`userProfileOverride.storage.js`, and `frontend/src/features/admin/mocks/userStatus.storage.js`
+are **still load-bearing** — confirmed by grepping actual imports before touching
+anything: `adminUsers.service.js`, `organizations.service.js`, and
+`organizerDemotion.service.js` (all still-mocked domains) read/write them directly,
+independent of `auth.service.js`. Only `auth.service.js`'s own internal mock-mode
+`sanitizeUser()` reads them now (previously also its real-mode path) — the storage
+modules themselves stay until Organizations/Users&Roles have their own backend
+phases.
 
----
+### Mock Functions Retained
 
-## Migration Steps for Replacing the Authentication Mocks
+`getUserById`/`getAllUsers` remain on the mock `usersDb`/`sanitizeUser` path
+**regardless of `VITE_DATA_SOURCE`** — the backend has no
+`GET /api/v1/users/{id}`/`GET /api/v1/admin/users` equivalent yet. Real callers
+(`organizerActions.service.js`, `adminUsers.service.js`, `AdminReportsView.vue`,
+`AdminActionsView.vue`, `AdminOrganizationsView.vue`, `organizationIntegrity.js`) keep
+working unmodified. **Known consequence**: a volunteer registered through the real API
+does not appear in these two mock functions' results (they only see the 3 fixture
+users) until the future Users & Roles backend phase implements the real endpoints and
+switches these two functions over.
 
-1. **Set `VITE_API_BASE_URL`** in `frontend/.env` to `http://localhost:8080/api/v1`
-   (already the documented default).
-2. **Enable credentialed requests**: `frontend/src/services/http.js`'s `httpClient`
-   currently has no `withCredentials`. It must be set to `true` — the refresh cookie
-   will not be sent or accepted cross-origin otherwise (frontend and backend are
-   different origins in local dev: `:8080`-or-`:5173` vs `:8080`; see the port
-   conflict already flagged in `backend/README_LOCAL.md`).
-3. **Rewrite `auth.service.js`** to call the real endpoints instead of the in-memory
-   `usersDb`, **keeping the same exported function names** so `auth.store.js` and
-   every other consumer needs no change to *how* they call it:
-   - `login(email, password)` → `POST /auth/login`, unwrap `.user` from `AuthResponse`.
-   - `register(payload)` → `POST /auth/register`, unwrap `.user`.
-   - `logout()` → `POST /auth/logout`.
-   - `getCurrentSession()` → `GET /auth/me` (note: the real endpoint takes no `userId`
-     parameter — it's implicit from the bearer token — so this call's signature
-     necessarily changes; `auth.store.js` must be updated to stop passing `userId`).
-   - `getUserById`/`getAllUsers` have **no real backend equivalent yet** — leave mocked
-     until the Users & Roles phase ships.
-4. **Add an Axios request interceptor** attaching `Authorization: Bearer <accessToken>`
-   from the store's in-memory access token (never `localStorage` — ADR-1 keeps it
-   memory-only specifically to limit XSS exposure).
-5. **Add an Axios response interceptor** that, on a 401 from any endpoint other than
-   `/auth/login`/`/auth/register`, attempts one silent `POST /auth/refresh` (the
-   browser sends the cookie automatically) and retries the original request once; on a
-   second 401, treat as a real session expiry (log out, redirect to `/login`).
-6. **Rewrite `auth.store.js`**'s persisted-session shape: replace
-   `localStorage.setItem('onehelp.auth.session', {userId, issuedAt})` with holding the
-   access token **only in memory** (a `ref`, never persisted) — session restoration on
-   page reload becomes "try `GET /auth/me`; if it 401s, try one silent refresh; if that
-   also fails, the user is logged out," rather than reading a stored `userId`.
-7. **Map backend error codes to the existing i18n keys**: the backend's `code` field
-   (`auth.unknownEmail`, `auth.invalidPassword`, `auth.duplicateEmail`,
-   `auth.accountSuspended`, `auth.invalidSession`) already matches the mock's own
-   error-string vocabulary field-for-field (per `error-contract.md`'s design intent) —
-   an Axios response interceptor that extracts `error.response.data.code` and throws
-   `new Error(code)` makes every existing `t(authErrorKey(err.message))`-style call
-   site work unchanged.
-8. **Remove** `userRole.storage.js`, `userProfileOverride.storage.js`,
-   `admin/mocks/userStatus.storage.js` once nothing reads them anymore (role/status/
-   profile all live directly on the real `CurrentUserResponse` now).
-9. Ship this one domain, confirm the frontend's login/register/logout/session-restore
-   flows work end-to-end against the real backend, **before** starting Users & Roles —
-   per `frontend-backend-replacement-map.md`'s explicit incremental-order guidance
-   ("Authentication and current user... must be first").
+### Session Model (`auth.store.js`)
+
+State: `currentUser`, `accessToken`, `expiresIn`, `isInitialized`, `loading`, `error`.
+The access token exists only in this store's reactive state, mirrored into
+`authSession.js` for the HTTP layer — never `localStorage`/`sessionStorage`/IndexedDB/
+a frontend-created cookie. The old `onehelp.auth.session` localStorage key is gone
+entirely (not just unused — no code path writes or reads it anymore).
+
+`login()`/`register()`/the interceptor's own refresh all funnel through one
+`hydrateSession({accessToken, expiresIn, user})` / `clearSession()` pair, so there is
+exactly one place "the session changed" happens — no risk of a stale field from a
+previous user surviving a switch.
+
+### Session Restoration Strategy
+
+`initializeSession()` (called once from `main.js` at boot, memoized, also awaited by
+the router guard) calls `POST /auth/refresh` **directly** — not `GET /auth/me` first.
+Rationale: there is no in-memory access token yet on a fresh page load, so calling
+`/auth/me` first would be a guaranteed, pointless 401 before the refresh cookie ever
+gets a chance; going straight to `/refresh` is strictly fewer requests and was
+confirmed via the browser's own network panel during manual verification (exactly one
+`/auth/refresh` call per load, `200 OK`, no wasted round trip). A missing/expired/
+invalid cookie resolves to `auth.invalidSession`/`common.unauthenticated`, caught
+silently (`clearSession()`, no error snackbar) — the expected state for most page
+loads, not a failure to report.
+
+### Interceptor Behavior (`http.js`)
+
+Single-flight: concurrent 401s across multiple requests share one in-flight
+`refreshPromise` rather than each starting their own. `/auth/login`, `/auth/register`,
+and `/auth/refresh` itself are exempt (never trigger a refresh-and-retry on their own
+401/403). Each original request is retried at most once (`config._retriedAfterRefresh`
+flag). 403 never triggers this path at all (checked before the exemption list). On
+refresh success: new token stored, `onSessionRefreshed(user, expiresIn)` fires once,
+queued requests retry with the new token. On refresh failure: `onSessionExpired()`
+fires once (not once per queued request — only the promise's own `.catch` runs it),
+clearing the session; the refresh's own error (not the original request's stale-token
+401) is what every queued caller receives, since it's the more actionable of the two.
+
+### Demo Credentials
+
+`LoginView.vue` shows the fixture demo-account buttons only when
+`VITE_DATA_SOURCE !== 'api'`. In API mode it shows a translated note
+(`auth.login.apiModeNote`) directing the visitor to register instead — no hardcoded
+backend seed users were created to keep the old helper working (explicitly out of
+scope; see Constraints).
+
+### Manual Browser Testing — What Was Verified
+
+Performed via real Chrome browser automation (not curl) against the running
+`npm run dev` (port 5173) + `./mvnw spring-boot:run -Dspring-boot.run.profiles=local`
+(port 8080) + local MySQL:
+
+- Register a real volunteer through the actual form → 201, `AuthResponse` correct,
+  `Set-Cookie` present with `Path=/api/v1/auth`, `HttpOnly`, `SameSite=Strict`.
+- **Found and fixed live**: the role/status casing bug (§ Response DTOs) — without the
+  fix, every `hasRole()` check silently failed post-login/register, redirecting a
+  freshly-registered volunteer to `/unauthorized` instead of `/my-actions`.
+- Confirmed in MySQL directly: the registered user row, and refresh-token rows storing
+  only a SHA-256 hash (never the raw value).
+- Hard navigation (fresh JS context, no in-memory token) to a `VOLUNTEER`-only route
+  restored the session via the refresh cookie alone — exactly one `/auth/refresh`
+  network call, `200`, no console errors.
+- Logout → 204, `Set-Cookie` clearing cookie present, confirmed in MySQL that the
+  active refresh-token row's `revoked_at` was set, confirmed `document.cookie` never
+  exposed `refreshToken` (HttpOnly working), confirmed no `onehelp.auth.session` or
+  access token in `localStorage`/`sessionStorage`.
+- Hard navigation after logout → correctly redirected to `/login?redirect=/my-actions`
+  (guest state, redirect query preserved), demo-credentials panel correctly replaced
+  by the API-mode note.
+
+### Manual Browser Testing — Not Completed, Needs User Verification
+
+A Chrome extension in this testing environment intermittently intercepted input
+focus after clicking a password field (`"Cannot access a chrome-extension:// URL of
+different extension"`), blocking further automated interaction mid-session. This is
+an environment/extension issue, not an application bug — the wrong-password and
+duplicate-email flows were verified another way (direct backend HTTP calls in the
+prior phase confirming `auth.invalidPassword`/`auth.duplicateEmail` are returned
+correctly, plus a code-level trace of `LoginView.vue`/`RegisterView.vue`'s existing
+`KNOWN_ERROR_CODES` translation logic), but **not visually confirmed rendering
+correctly in a live browser**. Recommend the user manually confirm:
+
+- Logging in with a wrong password shows the translated "Incorrect password" message.
+- Registering a duplicate email shows the translated "account already exists" message.
+- `document.cookie` truly never exposes `refreshToken` on a machine/profile without
+  the interfering extension (already confirmed once in this session, but worth a
+  second look given the tooling hiccup).
 
 ## Known Limitations
 
-- **No seed/demo data.** The mock's 3 demo accounts (`volunteer@onehelp.local`, etc.)
-  don't exist in the real database — `LoginView.vue`'s demo-credentials helper will
-  show credentials that don't work until either a Flyway seed migration or a manual
-  `POST /auth/register` creates equivalent accounts. Not addressed in this phase.
-- **`getUserById`/`getAllUsers` have no real backend endpoint yet** — only the five
-  auth endpoints exist. Anything depending on those two mock functions must stay
-  mocked until a future Users & Roles phase.
+- **No seed/demo data.** No backend-side fixture accounts exist — every login must go
+  through a real, self-registered volunteer.
+- **`getUserById`/`getAllUsers` have no real backend endpoint yet** — see § Mock
+  Functions Retained.
 - **No rate limiting.** Login/register accept unlimited attempts — explicitly deferred
-  per `security-and-authentication.md`'s own "later hardening" list, not an oversight
-  of this phase.
+  per `security-and-authentication.md`'s own "later hardening" list.
 - **Access-token staleness window.** A role change or suspension takes up to 15
   minutes to reflect in an *already-issued* access token for any endpoint except
   `/auth/me` (which always re-reads live state) — an accepted, documented trade-off
   (ADR-3), not a bug.
-- **The frontend/backend port conflict** (`vite.config.js` and `application.yml` both
-  default to `8080`) documented in `backend/README_LOCAL.md` still applies — pick a
-  non-conflicting port pair before wiring up `httpClient` for real.
+- **Mock-mode session no longer survives a reload.** Removing the
+  `onehelp.auth.session` localStorage key (required — the backend is now the source of
+  truth) means `VITE_DATA_SOURCE=mock` has no cookie to restore a session from either;
+  mock-mode auth now honestly behaves like "logged in until the next reload," not a
+  regression so much as mock mode no longer pretending to have a persistence mechanism
+  it was never going to keep.

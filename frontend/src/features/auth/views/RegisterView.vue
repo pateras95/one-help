@@ -61,6 +61,7 @@ function validate() {
 }
 
 async function handleSubmit() {
+  if (authStore.loading) return
   formError.value = ''
   if (!validate()) return
 
@@ -79,6 +80,16 @@ async function handleSubmit() {
       : ROUTES.MY_ACTIONS
     router.push(target)
   } catch (err) {
+    if (err.code === 'validation.failed') {
+      // The client already validates every rule the backend enforces before
+      // submitting, so this re-run should normally find nothing new — but if the
+      // backend caught something the form didn't (e.g. a length cap the form
+      // doesn't mirror), surface it as translated field errors rather than ever
+      // showing the backend's raw English message.
+      if (!validate()) return
+      formError.value = t('auth.errors.generic')
+      return
+    }
     const code = KNOWN_ERROR_CODES.includes(err.message) ? err.message : 'generic'
     formError.value = t(`auth.errors.${code}`)
   }

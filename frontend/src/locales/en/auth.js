@@ -18,6 +18,7 @@ export default {
     showPassword: 'Show password',
     hidePassword: 'Hide password',
     sessionNote: 'This is a mocked sign-in — your session stays saved on this device until you log out. There is no real account or server behind it.',
+    sessionNoteApi: 'Your session is kept only in memory for this tab — reloading the page restores it automatically as long as you stay signed in.',
     submit: 'Sign in',
     submitting: 'Signing in...',
     noAccount: "Don't have an account?",
@@ -25,7 +26,8 @@ export default {
     backToActions: 'Back to actions',
     demoTitle: 'Demo accounts (development)',
     demoVolunteer: 'Volunteer: {email} / {password}',
-    demoOrganizer: 'Organizer: {email} / {password}'
+    demoOrganizer: 'Organizer: {email} / {password}',
+    apiModeNote: 'Connected to the real backend — there are no demo accounts here. Register a new volunteer account to sign in.'
   },
   register: {
     subtitle: 'Become a OneHelp volunteer.',

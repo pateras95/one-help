@@ -15,6 +15,9 @@ export default defineConfig({
     }
   },
   server: {
-    port: 8080
+    // Explicitly pinned rather than left to Vite's own default so the port is
+    // self-documenting here — the backend also runs on 8080 (server.port in
+    // application.yml), so the two must never share a port.
+    port: 5173
   }
 })

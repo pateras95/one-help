@@ -27,6 +27,11 @@ const showPassword = ref(false)
 const formError = ref('')
 const fieldErrors = ref({ email: '', password: '' })
 
+// Real backend accounts don't include the mock's fixture users — advertising
+// credentials that don't work would be dishonest, so the demo-fill panel only
+// shows in mock mode (Part 13).
+const isApiMode = import.meta.env.VITE_DATA_SOURCE === 'api'
+
 function validate() {
   fieldErrors.value = { email: '', password: '' }
 
@@ -55,6 +60,7 @@ function fillDemoCredentials(credentials) {
 }
 
 async function handleSubmit() {
+  if (authStore.loading) return
   formError.value = ''
   if (!validate()) return
 
@@ -126,7 +132,9 @@ async function handleSubmit() {
           </template>
         </VTextField>
 
-        <p class="text-caption text-textSecondary mb-4">{{ t('auth.login.sessionNote') }}</p>
+        <p class="text-caption text-textSecondary mb-4">
+          {{ t(isApiMode ? 'auth.login.sessionNoteApi' : 'auth.login.sessionNote') }}
+        </p>
 
         <OHButton
           type="submit"
@@ -149,7 +157,11 @@ async function handleSubmit() {
         <RouterLink :to="ROUTES.ACTIONS">{{ t('auth.login.backToActions') }}</RouterLink>
       </p>
 
-      <VExpansionPanels class="mt-5" variant="accordion">
+      <p v-if="isApiMode" class="text-caption text-textSecondary text-center mt-5 mb-0">
+        {{ t('auth.login.apiModeNote') }}
+      </p>
+
+      <VExpansionPanels v-else class="mt-5" variant="accordion">
         <VExpansionPanel class="oh-demo-panel">
           <VExpansionPanelTitle class="text-caption text-textSecondary">
             {{ t('auth.login.demoTitle') }}

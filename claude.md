@@ -4,18 +4,15 @@
 
 OneHelp is a responsive web application that connects volunteers with verified social, environmental, health and emergency-support actions.
 
-The current development phase is frontend-only.
-
-Do not create:
-
-* Backend applications
-* Spring Boot code
-* Database schemas
-* Docker backend services
-* Real API endpoints
-* Server-side authentication
-
-When data is required, use local mock data and mock service modules.
+A Spring Boot backend now exists (`backend/`) and the **authentication domain is
+live**: the frontend's login/register/logout/session-restoration call the real API
+(`http://localhost:8080/api/v1/auth/**`) rather than mocks — see
+`docs/backend-discovery/api-authentication.md` for the contract. Every other domain
+(organizations, actions, participation, attendance, QR, reports, admin, moderation)
+remains frontend-only and must keep using local mock data and mock service modules
+until that domain's own backend phase ships (`docs/backend-architecture/
+local-development-and-integration.md` § Incremental implementation order). Do not
+implement backend code for those domains from the frontend side of this repository.
 
 ## Permanently excluded features
 
@@ -336,9 +333,14 @@ Views should request data through services or stores.
 
 ## Axios
 
-Axios may be configured for future use, but do not call a real backend.
+The shared `httpClient` (`services/http.js`) now calls the real backend for
+authentication (`withCredentials: true`, a bearer-token request interceptor, and a
+silent-refresh response interceptor — see `services/authSession.js` and
+`features/auth/services/auth.service.js`). Every other domain's service still calls
+its own mock unconditionally until that domain's own backend phase ships — do not
+route another domain's service through `httpClient` yet.
 
-Keep the future base URL configurable:
+Keep the base URL configurable:
 
 ```env
 VITE_API_BASE_URL=http://localhost:8080/api/v1
@@ -356,7 +358,12 @@ Never commit:
 
 ## Authentication
 
-Authentication is mocked during the frontend-only phase.
+Authentication is live against the real backend (`VITE_DATA_SOURCE=api`, the default
+in `.env.local`) — the access token lives only in memory (`services/authSession.js`),
+never localStorage/sessionStorage/IndexedDB/a frontend-created cookie; the refresh
+token is an HttpOnly cookie the frontend never reads. Setting `VITE_DATA_SOURCE=mock`
+falls back to the original local-mock behavior for auth specifically (session does not
+survive a page reload in that mode — there is no cookie to restore from).
 
 Prepare the architecture for these roles:
 

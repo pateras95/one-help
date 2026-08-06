@@ -1,4 +1,6 @@
 import { mockResponse } from '@/utils/mockResponse'
+import { httpClient, extractApiError } from '@/services/http'
+import { normalizeApiUser } from '@/services/normalizeApiUser'
 import { MOCK_USERS } from '../mocks/users.mock'
 import { ROLES } from '@/constants/roles'
 import { DEFAULT_LOCALE } from '@/constants/locales'
@@ -8,15 +10,94 @@ import { getUserRoleOverride } from '../mocks/userRole.storage'
 import { getUserProfileOverride } from '../mocks/userProfileOverride.storage'
 
 /**
- * In-memory copy of the fixtures — registrations are added here, never to
- * the imported `MOCK_USERS` array, so the source fixture stays untouched
- * across the session (and a page reload starts fresh again, same as any
- * other mock data in this app).
- *
- * NOTE for a future real backend: everything below this line is the part
- * that would be replaced by real HTTP calls — the exported function
- * signatures are designed to stay the same.
+ * Mixed mock/API switch (docs/backend-architecture/local-development-and-integration.md
+ * § Mixed mock/API strategy) — read only here. Every other feature's `*.service.js`
+ * keeps calling its own mock unconditionally until that domain's own backend phase
+ * ships; this is deliberately not a single global "go live" flag.
  */
+const USE_API = import.meta.env.VITE_DATA_SOURCE === 'api'
+
+/**
+ * Turns a backend `ApiErrorResponse` (via an Axios error) into the same
+ * `Error(code)` shape every mock service already throws, so every existing
+ * `t('auth.errors.<code>')` call site keeps working unchanged. Backend codes are
+ * domain-prefixed (`auth.unknownEmail`); the mock's own vocabulary never was
+ * (`unknownEmail`) — stripping the `auth.` prefix is what preserves compatibility.
+ * The full, unstripped code and any field errors are still attached to the thrown
+ * `Error` for callers that want them (e.g. a `validation.failed` field-error map).
+ *
+ * @param {import('axios').AxiosError} axiosError
+ * @returns {Error}
+ */
+function toDomainError(axiosError) {
+  const apiError = extractApiError(axiosError)
+  const shortCode = apiError.code.startsWith('auth.') ? apiError.code.slice('auth.'.length) : apiError.code
+  const error = new Error(shortCode)
+  error.code = apiError.code
+  error.fieldErrors = apiError.fieldErrors
+  error.status = apiError.status
+  return error
+}
+
+// ---------------------------------------------------------------------------
+// Real authentication/session operations (POST /auth/login, /register, /refresh,
+// /logout, GET /auth/me) — used whenever VITE_DATA_SOURCE=api. See
+// docs/backend-discovery/api-authentication.md for the full contract.
+// ---------------------------------------------------------------------------
+
+async function apiLogin(email, password) {
+  try {
+    const { data } = await httpClient.post('/auth/login', { email, password })
+    return { ...data, user: normalizeApiUser(data.user) }
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+async function apiRegister(payload) {
+  try {
+    const { data } = await httpClient.post('/auth/register', payload)
+    return { ...data, user: normalizeApiUser(data.user) }
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+async function apiLogout() {
+  try {
+    await httpClient.post('/auth/logout')
+  } catch {
+    // Logout is safe/idempotent even if the access token had already expired or
+    // the refresh cookie was already gone — the caller always clears local state
+    // regardless (see auth.store.js), matching the mock's own "never fails" logout.
+  }
+}
+
+async function apiRefreshSession() {
+  try {
+    const { data } = await httpClient.post('/auth/refresh')
+    return { ...data, user: normalizeApiUser(data.user) }
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+async function apiGetCurrentSession() {
+  try {
+    const { data } = await httpClient.get('/auth/me')
+    return normalizeApiUser(data)
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Mock authentication (kept for VITE_DATA_SOURCE=mock / local frontend-only work).
+// In-memory copy of the fixtures — registrations are added here, never to the
+// imported `MOCK_USERS` array, so the source fixture stays untouched across the
+// session (and a page reload starts fresh again, same as any other mock data).
+// ---------------------------------------------------------------------------
+
 let usersDb = MOCK_USERS.map((user) => ({ ...user }))
 
 function normalizeEmail(email) {
@@ -24,29 +105,23 @@ function normalizeEmail(email) {
 }
 
 /**
- * Explicit allowlist rather than "spread everything except password" —
- * a new field added to a user record later has to be deliberately added
- * here too before it's ever returned to the UI.
+ * Explicit allowlist rather than "spread everything except password" — a new
+ * field added to a user record later has to be deliberately added here too
+ * before it's ever returned to the UI. Shared by mock-mode auth and by
+ * `getUserById`/`getAllUsers` below (which stay mocked regardless of
+ * `VITE_DATA_SOURCE` — see § Temporary user-directory mocks).
  */
 function sanitizeUser(user) {
-  // An admin edit to name/email overrides the base fixture — same
-  // persisted-overlay reasoning as role/status below.
   const profileOverride = getUserProfileOverride(user.id)
   return {
     id: user.id,
     firstName: profileOverride?.firstName ?? user.firstName,
     lastName: profileOverride?.lastName ?? user.lastName,
     email: profileOverride?.email ?? user.email,
-    // A successful organizer application overrides the base fixture's
-    // role — see `mocks/userRole.storage.js` for why this needs its own
-    // persisted overlay rather than mutating `usersDb` directly.
     role: getUserRoleOverride(user.id) ?? user.role,
     avatarInitials: user.avatarInitials,
     localePreference: user.localePreference,
     createdAt: user.createdAt,
-    // Admin-moderated account standing — not part of the base fixture,
-    // looked up fresh every time so a just-suspended user is reflected
-    // immediately everywhere this shape is used.
     status: getUserStatus(user.id)
   }
 }
@@ -58,11 +133,15 @@ function buildInitials(firstName, lastName) {
 }
 
 /**
- * @param {string} email
- * @param {string} password
- * @returns {Promise<Object>} Sanitized user (never includes `password`).
+ * Resolves the same `{accessToken, expiresIn, user}` shape the real API returns
+ * (`accessToken`/`expiresIn` are always `null` — mock mode has no token concept at
+ * all) so the store's `hydrateSession` can stay mode-agnostic.
  */
-export async function login(email, password) {
+function mockSession(user) {
+  return { accessToken: null, expiresIn: null, user: sanitizeUser(user) }
+}
+
+async function mockLogin(email, password) {
   const normalizedEmail = normalizeEmail(email)
   const user = usersDb.find((candidate) => candidate.email.toLowerCase() === normalizedEmail)
 
@@ -76,21 +155,10 @@ export async function login(email, password) {
     return mockResponse(null, { shouldFail: true, errorMessage: 'accountSuspended' })
   }
 
-  return mockResponse(sanitizeUser(user))
+  return mockResponse(mockSession(user))
 }
 
-/**
- * Registers a new volunteer account (organizer registration isn't offered
- * in this phase).
- *
- * @param {Object} payload
- * @param {string} payload.firstName
- * @param {string} payload.lastName
- * @param {string} payload.email
- * @param {string} payload.password
- * @returns {Promise<Object>} Sanitized user.
- */
-export async function register(payload) {
+async function mockRegister(payload) {
   const normalizedEmail = normalizeEmail(payload.email)
   const exists = usersDb.some((candidate) => candidate.email.toLowerCase() === normalizedEmail)
 
@@ -111,21 +179,102 @@ export async function register(payload) {
   }
 
   usersDb = [...usersDb, newUser]
-  return mockResponse(sanitizeUser(newUser))
+  return mockResponse(mockSession(newUser))
 }
 
-/** No mock server state to invalidate — kept for interface parity with a real backend. */
-export async function logout() {
+/** No mock server state to invalidate — kept for interface parity with the API. */
+async function mockLogout() {
   return mockResponse(true, { delay: 150 })
 }
 
 /**
- * Read-only identity lookup for another feature that needs to resolve a
- * userId to safe, displayable fields (e.g. the organizer participant
- * list) — never a password. Resolves `null` (not a rejection) when the
- * id doesn't exist, mirroring `getActionById`'s "not found isn't an
- * error" convention.
+ * Mock mode has no refresh-token/cookie concept at all — there is nothing to
+ * restore a session from after a page reload in mock mode (a real, honest
+ * limitation now that the old `onehelp.auth.session` localStorage key is gone,
+ * not a bug: mock mode simply logs out on every reload).
+ */
+async function mockRefreshSession() {
+  return mockResponse(null, { shouldFail: true, errorMessage: 'invalidSession', delay: 150 })
+}
+
+async function mockGetCurrentSession() {
+  return mockResponse(null, { shouldFail: true, errorMessage: 'invalidSession', delay: 150 })
+}
+
+// ---------------------------------------------------------------------------
+// Public API — same exported names as before, each branching on VITE_DATA_SOURCE.
+// ---------------------------------------------------------------------------
+
+/**
+ * @param {string} email
+ * @param {string} password
+ * @returns {Promise<Object>} `{accessToken, expiresIn, user}` — `accessToken`/
+ *   `expiresIn` are always `null` in mock mode (no token concept exists there).
+ */
+export async function login(email, password) {
+  return USE_API ? apiLogin(email, password) : mockLogin(email, password)
+}
+
+/**
+ * Registers a new volunteer account (organizer registration isn't offered in this
+ * phase, in either mode).
  *
+ * @param {Object} payload
+ * @param {string} payload.firstName
+ * @param {string} payload.lastName
+ * @param {string} payload.email
+ * @param {string} payload.password
+ * @returns {Promise<Object>} Same shape as {@link login}'s resolved value.
+ */
+export async function register(payload) {
+  return USE_API ? apiRegister(payload) : mockRegister(payload)
+}
+
+export async function logout() {
+  return USE_API ? apiLogout() : mockLogout()
+}
+
+/**
+ * API mode only, meaningfully — attempts one silent refresh using the browser's
+ * HttpOnly refresh cookie. Never called directly by the store's own boot-time
+ * restoration in API mode; that flow goes through `httpClient`'s own interceptor.
+ * Exposed here mainly so `auth.store.js` can trigger a refresh explicitly (its own
+ * boot-time restoration attempt) with the same error-code contract as every other
+ * function in this file.
+ *
+ * @returns {Promise<Object>} `{accessToken, expiresIn, user}`.
+ */
+export async function refreshSession() {
+  return USE_API ? apiRefreshSession() : mockRefreshSession()
+}
+
+/**
+ * Re-validates the current session. In API mode this is `GET /auth/me`, resolved
+ * from the request's bearer token — it takes **no `userId` parameter**, unlike the
+ * old mock signature, since the backend never accepts a client-asserted identity.
+ *
+ * @returns {Promise<Object>} Sanitized user (API: `CurrentUserResponse`).
+ */
+export async function getCurrentSession() {
+  return USE_API ? apiGetCurrentSession() : mockGetCurrentSession()
+}
+
+// ---------------------------------------------------------------------------
+// Temporary user-directory mocks — intentionally NOT switched by VITE_DATA_SOURCE.
+//
+// The backend has no equivalent endpoint yet (`GET /api/v1/users/{id}`,
+// `GET /api/v1/admin/users` are unimplemented — see
+// docs/backend-discovery/api-authentication.md § Known Limitations). Organizer and
+// admin features (`organizerActions.service.js`, `adminUsers.service.js`,
+// `AdminReportsView.vue`, `AdminActionsView.vue`, `AdminOrganizationsView.vue`,
+// `organizationIntegrity.js`) still call these two functions directly and must keep
+// working unmodified. They will be switched to the real API in the future "Users &
+// Roles" backend phase, alongside those endpoints actually being implemented — not
+// before, since pretending a nonexistent endpoint exists would break every one of
+// those callers.
+// ---------------------------------------------------------------------------
+
+/**
  * @param {string} userId
  * @returns {Promise<Object|null>} Sanitized user, or `null`.
  */
@@ -135,32 +284,6 @@ export async function getUserById(userId) {
 }
 
 /**
- * Re-validates a persisted session by looking up the user id — mirrors
- * what a real app would do with a session cookie/token on boot.
- *
- * @param {string} userId
- * @returns {Promise<Object>} Sanitized user.
- */
-export async function getCurrentSession(userId) {
-  const user = usersDb.find((candidate) => candidate.id === userId)
-
-  if (!user) {
-    return mockResponse(null, { shouldFail: true, errorMessage: 'invalidSession', delay: 150 })
-  }
-  // Re-checked on every boot/guarded navigation, not just at login — a
-  // session suspended after it was issued must stop working on its next
-  // initialization, not just block future login attempts.
-  if (getUserStatus(user.id) === ACCOUNT_STATUS.SUSPENDED) {
-    return mockResponse(null, { shouldFail: true, errorMessage: 'accountSuspended', delay: 150 })
-  }
-
-  return mockResponse(sanitizeUser(user), { delay: 150 })
-}
-
-/**
- * All users (base fixtures + this-session registrations), sanitized —
- * used only by the admin user-management feature.
- *
  * @returns {Promise<Array<Object>>}
  */
 export async function getAllUsers() {

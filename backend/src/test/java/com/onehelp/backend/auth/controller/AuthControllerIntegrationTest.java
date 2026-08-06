@@ -69,6 +69,48 @@ class AuthControllerIntegrationTest {
     }
 
     @Test
+    void refreshCookiePathCoversBothRefreshAndLogoutAndClearingMatchesIssuance() {
+        RegisterRequest registerRequest = new RegisterRequest("A", "B", testEmail, "Str0ngPass!");
+        ResponseEntity<AuthResponse> registerResponse = restTemplate.exchange(
+                "/api/v1/auth/register",
+                HttpMethod.POST,
+                jsonRequest(registerRequest, new HttpHeaders()),
+                AuthResponse.class);
+        String issuedSetCookie = registerResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        assertThat(issuedSetCookie).isNotNull();
+
+        // The Path attribute is what a real browser uses to decide which requests
+        // carry the cookie — it must be broad enough to include /auth/logout, but no
+        // broader (never bare "/", never scoped to only /auth/refresh).
+        assertThat(issuedSetCookie)
+                .contains("Path=/api/v1/auth;")
+                .doesNotContain("Path=/api/v1/auth/refresh")
+                .doesNotContain("Path=/;")
+                .contains("HttpOnly")
+                .contains("SameSite=Strict");
+
+        String refreshCookie = extractRefreshCookie(registerResponse);
+        HttpHeaders logoutHeaders = new HttpHeaders();
+        logoutHeaders.setBearerAuth(registerResponse.getBody().accessToken());
+        logoutHeaders.add(HttpHeaders.COOKIE, refreshCookie);
+        ResponseEntity<Void> logoutResponse = restTemplate.exchange(
+                "/api/v1/auth/logout", HttpMethod.POST, new HttpEntity<>(logoutHeaders), Void.class);
+
+        assertThat(logoutResponse.getStatusCode()).isEqualTo(HttpStatus.NO_CONTENT);
+        String clearingSetCookie = logoutResponse.getHeaders().getFirst(HttpHeaders.SET_COOKIE);
+        assertThat(clearingSetCookie).isNotNull();
+        // Per RFC 6265, a browser only overwrites/deletes a cookie if name, Path, and
+        // (implicitly) domain match exactly — logout's clearing cookie must mirror
+        // every attribute the issuing cookie used, or the original would linger.
+        assertThat(clearingSetCookie)
+                .contains("refreshToken=;")
+                .contains("Path=/api/v1/auth;")
+                .contains("HttpOnly")
+                .contains("SameSite=Strict")
+                .contains("Max-Age=0");
+    }
+
+    @Test
     void fullRegisterLoginRefreshLogoutFlowWorksEndToEnd() {
         RegisterRequest registerRequest =
                 new RegisterRequest("Δήμητρα", "Παπαδοπούλου", testEmail, "Str0ngPass!");

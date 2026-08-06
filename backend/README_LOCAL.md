@@ -20,7 +20,7 @@ OneHelp has three moving parts you run locally, plus one optional GUI tool:
 **How they communicate:**
 
 ```
-Browser  ──HTTP──▶  Frontend (Vite dev server)
+Browser  ──HTTP──▶  Frontend (Vite dev server, port 5173)
                          │
                          │  axios calls to VITE_API_BASE_URL
                          ▼
@@ -34,10 +34,11 @@ Browser  ──HTTP──▶  Frontend (Vite dev server)
 The frontend never talks to MySQL directly — it only calls the backend's REST API. The
 backend is the only thing that ever touches the database.
 
-As of this guide, the backend exposes **no business endpoints yet** — only
-`/actuator/health` and the Swagger/OpenAPI documentation. The frontend still runs
-entirely on its own local mock data. Wiring the two together happens feature by feature
-(see § 15).
+**Authentication is live against the real backend** (`POST /auth/register`,
+`/login`, `/refresh`, `/logout`, `GET /auth/me` — see
+`docs/backend-discovery/api-authentication.md`). Every other domain (organizations,
+actions, participation, attendance, QR, reports, admin) still runs entirely on the
+frontend's own local mock data; each is wired up feature by feature (see § 15).
 
 ---
 
@@ -182,11 +183,14 @@ All backend configuration comes from `backend/.env` (copied from
 | `JWT_SECRET` | A long random secret used to sign JWT access/refresh tokens. Must be at least 32 characters — the app refuses to start with anything shorter. No authentication endpoints exist yet, but the property is validated at startup regardless. |
 | `CORS_ALLOWED_ORIGINS` | Comma-separated list of frontend origins allowed to call the API from a browser. Must include whatever URL the frontend is actually running at (see the port note in § 6). |
 
-The frontend has its own, separate `.env` (copied from `frontend/.env.example`):
+The frontend has its own, separate env file. Copy `frontend/.env.example` to
+`frontend/.env.local` (Vite's own gitignored "local overrides" convention — never
+commit it) and fill in real values:
 
 | Variable | What it does |
 |---|---|
-| `VITE_API_BASE_URL` | Base URL the frontend will eventually call the backend at. Defaults to `http://localhost:8080/api/v1`. |
+| `VITE_API_BASE_URL` | Base URL the frontend calls the backend at: `http://localhost:8080/api/v1`. |
+| `VITE_DATA_SOURCE` | `api` (default) or `mock`. Read only by `features/auth/services/auth.service.js` — every other domain's service keeps calling its own mock regardless of this value, until that domain's own backend phase ships. |
 | `VITE_MAP_TILE_URL` | Public OpenStreetMap tile server, used by the map view. Fine for local development. |
 
 ---
@@ -198,12 +202,9 @@ cd frontend
 npm run dev
 ```
 
-**Expected URL:** `frontend/vite.config.js` explicitly pins the dev server to
-**`http://localhost:8080`** — this is *not* Vite's usual default (`5173`).
-
-> ⚠️ **Port conflict with the backend.** The backend also runs on port **8080** (§ 7).
-> You cannot start both on their default configuration at the same time. See the
-> workaround in § 14 ("Port already in use").
+**Expected URL:** `http://localhost:5173` — `frontend/vite.config.js` explicitly pins
+this (not just Vite's own default) so it's self-documenting and never collides with
+the backend's port 8080.
 
 **Common problems:**
 
@@ -211,7 +212,7 @@ npm run dev
   `engines.node` in `package.json` (`>=22`). Install Node 22 (e.g. via `nvm install 22`).
 - Blank page / console errors about Vuetify or missing plugins → delete
   `frontend/node_modules` and re-run `npm install`.
-- Port `8080` already bound → see § 14.
+- Port `5173` already bound → see § 14.
 
 ---
 
@@ -300,6 +301,7 @@ SELECT * FROM flyway_schema_history;
 phpMyAdmin is **not part of this repository** — there's no Docker service or config
 file for it in `one-help/`. It's a general-purpose MySQL web GUI you can optionally
 install yourself if you prefer clicking through tables over the `mysql` CLI in § 8.
+It is **entirely optional and machine-specific** — never required to run the project.
 
 **To install it on Ubuntu:**
 
@@ -313,8 +315,10 @@ bookkeeping — either answer works for local development.
 
 **Default URL:** depends on how the installer configures your web server — typically
 `http://localhost/phpmyadmin` (Apache root install) or a dedicated port if you set one
-up in your own Apache/Nginx site config. Check what the installer printed at the end,
-or your web server's site configuration.
+up in your own Apache/Nginx site config (**this particular development machine's own
+install is configured at `http://localhost:8082`** — that URL is specific to this
+machine's Apache site config, not a project default; a fresh install elsewhere will
+very likely land at a different URL, so always check what your own installer printed).
 
 **Login credentials:** phpMyAdmin's login form asks for a MySQL username and password
 — use the same `DB_USERNAME`/`DB_PASSWORD` from your `backend/.env` (the `onehelp`
@@ -399,13 +403,13 @@ Commit
 
 | What | URL |
 |---|---|
-| Frontend | http://localhost:8080 *(see the port-conflict note in § 6/§ 14)* |
+| Frontend | http://localhost:5173 |
 | Backend | http://localhost:8080 |
 | Swagger UI | http://localhost:8080/swagger-ui.html |
 | OpenAPI JSON | http://localhost:8080/v3/api-docs |
-| Actuator (base) | http://localhost:8080/actuator *(requires authentication — no login exists yet, so this 403s until the auth phase ships)* |
+| Actuator (base) | http://localhost:8080/actuator *(requires authentication)* |
 | Actuator Health | http://localhost:8080/actuator/health |
-| phpMyAdmin | depends on your local install — see § 9 |
+| phpMyAdmin | http://localhost:8082 *(this machine's own local install only — see § 9; a different machine's install may live at a different URL)* |
 
 ---
 
@@ -469,23 +473,13 @@ npm run build
 Run `sudo systemctl status mysql`; if it's not active, `sudo systemctl start mysql`.
 
 **Port already in use**
-Both the frontend (`vite.config.js`) and the backend (`application.yml`) are
-configured for port **8080** — running both at once with no override *will* fail with
-`Address already in use`. Two options:
-
-1. Run the frontend on a different port for this session only (no file edits needed):
-   ```bash
-   cd frontend
-   npm run dev -- --port 5173
-   ```
-   Then update `CORS_ALLOWED_ORIGINS=http://localhost:5173` in `backend/.env` to match
-   (this is already the value in `backend/.env.example`, so if you never changed it,
-   there's nothing to do).
-2. Or find and stop whatever is already bound to 8080:
-   ```bash
-   ss -tlnp | grep 8080
-   kill <pid>
-   ```
+Frontend (5173) and backend (8080) are on separate, non-conflicting ports by default —
+if you still see `Address already in use`, something else on your machine already
+holds that port. Find and stop it:
+```bash
+ss -tlnp | grep 5173   # or 8080
+kill <pid>
+```
 
 **Flyway migration failed**
 Usually one of: MySQL isn't reachable (check § "MySQL not running" above), the
