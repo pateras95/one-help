@@ -22,6 +22,10 @@ onehelp:
     secret: ${JWT_SECRET:test-only-secret-value-not-for-production-use-0123456789}
   cors:
     allowed-origins: http://localhost:5173
+  security:
+    # Integration tests run over plain HTTP (no TLS) — same reasoning as
+    # application-local.yml.
+    refresh-cookie-secure: false
 
 logging:
   level:

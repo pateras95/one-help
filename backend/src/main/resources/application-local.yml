@@ -10,6 +10,12 @@ springdoc:
     enabled: true
     path: /swagger-ui.html
 
+onehelp:
+  security:
+    # Local dev runs over plain HTTP — a Secure cookie would otherwise be dropped by
+    # the browser, breaking the refresh flow.
+    refresh-cookie-secure: false
+
 logging:
   level:
     root: INFO

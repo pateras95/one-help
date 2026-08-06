@@ -1,8 +1,6 @@
 package com.onehelp.backend.users.entity;
 
-import com.onehelp.backend.common.persistence.UuidCharAttributeConverter;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -15,6 +13,8 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
@@ -36,7 +36,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 public class User {
 
     @Id
-    @Convert(converter = UuidCharAttributeConverter.class)
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "id", columnDefinition = "CHAR(36)", updatable = false, nullable = false)
     private UUID id;
 

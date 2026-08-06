@@ -1,9 +1,7 @@
 package com.onehelp.backend.auth.entity;
 
-import com.onehelp.backend.common.persistence.UuidCharAttributeConverter;
 import com.onehelp.backend.users.entity.User;
 import jakarta.persistence.Column;
-import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.Id;
@@ -14,6 +12,8 @@ import java.time.Instant;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 /**
  * A rotation-chain row backing the opaque refresh token cookie (ADR-1). Never
@@ -32,7 +32,7 @@ import lombok.Setter;
 public class RefreshToken {
 
     @Id
-    @Convert(converter = UuidCharAttributeConverter.class)
+    @JdbcTypeCode(SqlTypes.CHAR)
     @Column(name = "id", columnDefinition = "CHAR(36)", updatable = false, nullable = false)
     private UUID id;
 
