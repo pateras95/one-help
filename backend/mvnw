@@ -1,0 +1,349 @@
+#!/bin/sh
+# ----------------------------------------------------------------------------
+# Licensed to the Apache Software Foundation (ASF) under one
+# or more contributor license agreements. See the NOTICE file
+# distributed with this work for additional information
+# regarding copyright ownership. The ASF licenses this file
+# to you under the Apache License, Version 2.0.
+# ----------------------------------------------------------------------------
+
+# ----------------------------------------------------------------------------
+# Apache Maven Wrapper startup script, version 3.3.2
+#
+# Optional ENV vars
+# -----------------
+#   JAVA_HOME - location of a JDK home directory
+#   MVNW_REPOURL - repository base URL for downloading Maven
+#   MVNW_USERNAME/MVNW_PASSWORD - credentials for downloading Maven
+#   MVNW_VERBOSE - true to enable verbose output
+# ----------------------------------------------------------------------------
+
+set -euf
+
+[ "${MVNW_VERBOSE-}" != debug ] || set -x
+
+native_path() {
+  printf '%s\n' "$1"
+}
+
+case "$(uname)" in
+  CYGWIN* | MINGW*)
+    [ -z "${JAVA_HOME-}" ] || JAVA_HOME="$(cygpath --unix "$JAVA_HOME")"
+
+    native_path() {
+      cygpath --path --windows "$1"
+    }
+    ;;
+esac
+
+set_java_home() {
+  if [ -n "${JAVA_HOME-}" ]; then
+    if [ -x "$JAVA_HOME/jre/sh/java" ]; then
+      JAVACMD="$JAVA_HOME/jre/sh/java"
+      JAVACCMD="$JAVA_HOME/jre/sh/javac"
+    else
+      JAVACMD="$JAVA_HOME/bin/java"
+      JAVACCMD="$JAVA_HOME/bin/javac"
+
+      if [ ! -x "$JAVACMD" ] || [ ! -x "$JAVACCMD" ]; then
+        echo "The JAVA_HOME environment variable is not defined correctly, so mvnw cannot run." >&2
+        echo "JAVA_HOME is set to \"$JAVA_HOME\", but java or javac does not exist under \$JAVA_HOME/bin." >&2
+        return 1
+      fi
+    fi
+  else
+    JAVACMD="$(
+      'set' +e
+      'unset' -f command 2>/dev/null
+      'command' -v java
+    )" || :
+
+    JAVACCMD="$(
+      'set' +e
+      'unset' -f command 2>/dev/null
+      'command' -v javac
+    )" || :
+
+    if [ ! -x "${JAVACMD-}" ] || [ ! -x "${JAVACCMD-}" ]; then
+      echo "The JAVA_HOME environment variable is not defined correctly, so mvnw cannot run." >&2
+      echo "JAVA_HOME is not set and java/javac cannot be found in PATH." >&2
+      return 1
+    fi
+  fi
+}
+
+hash_string() {
+  str="${1:-}"
+  h=0
+
+  while [ -n "$str" ]; do
+    char="${str%"${str#?}"}"
+    h=$(((h * 31 + $(LC_CTYPE=C printf '%d' "'$char")) % 4294967296))
+    str="${str#?}"
+  done
+
+  printf '%x\n' "$h"
+}
+
+verbose() {
+  :
+}
+
+[ "${MVNW_VERBOSE-}" != true ] || verbose() {
+  printf '%s\n' "${1-}"
+}
+
+die() {
+  printf '%s\n' "$1" >&2
+  exit 1
+}
+
+trim() {
+  printf '%s' "${1}" | tr -d '[:space:]'
+}
+
+while IFS="=" read -r key value; do
+  case "${key-}" in
+    distributionUrl)
+      distributionUrl=$(trim "${value-}")
+      ;;
+    distributionSha256Sum)
+      distributionSha256Sum=$(trim "${value-}")
+      ;;
+  esac
+done <"${0%/*}/.mvn/wrapper/maven-wrapper.properties"
+
+[ -n "${distributionUrl-}" ] ||
+  die "cannot read distributionUrl property in ${0%/*}/.mvn/wrapper/maven-wrapper.properties"
+
+case "${distributionUrl##*/}" in
+  maven-mvnd-*bin.*)
+    MVN_CMD=mvnd.sh
+    _MVNW_REPO_PATTERN=/maven/mvnd/
+
+    case "${PROCESSOR_ARCHITECTURE-}${PROCESSOR_ARCHITEW6432-}:$(uname -a)" in
+      *AMD64:CYGWIN* | *AMD64:MINGW*)
+        distributionPlatform=windows-amd64
+        ;;
+      :Darwin*x86_64)
+        distributionPlatform=darwin-amd64
+        ;;
+      :Darwin*arm64)
+        distributionPlatform=darwin-aarch64
+        ;;
+      :Linux*x86_64*)
+        distributionPlatform=linux-amd64
+        ;;
+      *)
+        echo "Cannot detect native platform for mvnd on $(uname)-$(uname -m), using linux-amd64." >&2
+        distributionPlatform=linux-amd64
+        ;;
+    esac
+
+    distributionUrl="${distributionUrl%-bin.*}-$distributionPlatform.zip"
+    ;;
+
+  maven-mvnd-*)
+    MVN_CMD=mvnd.sh
+    _MVNW_REPO_PATTERN=/maven/mvnd/
+    ;;
+
+  *)
+    MVN_CMD="mvn${0##*/mvnw}"
+    _MVNW_REPO_PATTERN=/org/apache/maven/
+    ;;
+esac
+
+if [ -n "${MVNW_REPOURL-}" ]; then
+  distributionUrl="$MVNW_REPOURL$_MVNW_REPO_PATTERN${distributionUrl#*"$_MVNW_REPO_PATTERN"}"
+fi
+
+distributionUrlName="${distributionUrl##*/}"
+distributionUrlNameMain="${distributionUrlName%.*}"
+distributionUrlNameMain="${distributionUrlNameMain%-bin}"
+
+MAVEN_USER_HOME="${MAVEN_USER_HOME:-${HOME}/.m2}"
+MAVEN_HOME="${MAVEN_USER_HOME}/wrapper/dists/${distributionUrlNameMain-}/$(hash_string "$distributionUrl")"
+
+exec_maven() {
+  unset MVNW_VERBOSE MVNW_USERNAME MVNW_PASSWORD MVNW_REPOURL || :
+  exec "$MAVEN_HOME/bin/$MVN_CMD" "$@" ||
+    die "cannot execute $MAVEN_HOME/bin/$MVN_CMD"
+}
+
+if [ -d "$MAVEN_HOME" ]; then
+  verbose "Found existing MAVEN_HOME at $MAVEN_HOME"
+  exec_maven "$@"
+fi
+
+case "${distributionUrl-}" in
+  *?-bin.zip | *?maven-mvnd-?*-?*.zip)
+    ;;
+  *)
+    die "distributionUrl is not valid. Expected *-bin.zip or maven-mvnd-*.zip, found '${distributionUrl-}'"
+    ;;
+esac
+
+if TMP_DOWNLOAD_DIR="$(mktemp -d)" && [ -d "$TMP_DOWNLOAD_DIR" ]; then
+  clean() {
+    rm -rf "$TMP_DOWNLOAD_DIR"
+  }
+
+  trap clean HUP INT TERM EXIT
+else
+  die "cannot create temporary directory"
+fi
+
+mkdir -p -- "${MAVEN_HOME%/*}"
+
+verbose "Could not find MAVEN_HOME, downloading and installing Maven."
+verbose "Downloading from: $distributionUrl"
+verbose "Downloading to: $TMP_DOWNLOAD_DIR/$distributionUrlName"
+
+if command -v unzip >/dev/null; then
+  install="unzip -q -d \"$MAVEN_HOME\" \"$TMP_DOWNLOAD_DIR/$distributionUrlName\""
+elif command -v tar >/dev/null; then
+  install="tar -xf \"$TMP_DOWNLOAD_DIR/$distributionUrlName\" -C \"$MAVEN_HOME\""
+else
+  die "unzip or tar is required"
+fi
+
+download_with_wget() {
+  if [ -n "${MVNW_USERNAME-}" ] || [ -n "${MVNW_PASSWORD-}" ]; then
+    wget \
+      --http-user="${MVNW_USERNAME-}" \
+      --http-password="${MVNW_PASSWORD-}" \
+      -O "$TMP_DOWNLOAD_DIR/$distributionUrlName" \
+      "$distributionUrl"
+  else
+    wget \
+      -O "$TMP_DOWNLOAD_DIR/$distributionUrlName" \
+      "$distributionUrl"
+  fi
+}
+
+download_with_curl() {
+  if [ -n "${MVNW_USERNAME-}" ] || [ -n "${MVNW_PASSWORD-}" ]; then
+    curl \
+      --user "${MVNW_USERNAME-}:${MVNW_PASSWORD-}" \
+      -fL \
+      -o "$TMP_DOWNLOAD_DIR/$distributionUrlName" \
+      "$distributionUrl"
+  else
+    curl \
+      -fL \
+      -o "$TMP_DOWNLOAD_DIR/$distributionUrlName" \
+      "$distributionUrl"
+  fi
+}
+
+download_with_java() {
+  javaSource="$TMP_DOWNLOAD_DIR/Downloader.java"
+
+  cat >"$javaSource" <<'EOF'
+public class Downloader extends java.net.Authenticator {
+    @Override
+    protected java.net.PasswordAuthentication getPasswordAuthentication() {
+        String username = System.getenv("MVNW_USERNAME");
+        String password = System.getenv("MVNW_PASSWORD");
+
+        if (username == null) {
+            username = "";
+        }
+
+        if (password == null) {
+            password = "";
+        }
+
+        return new java.net.PasswordAuthentication(
+            username,
+            password.toCharArray()
+        );
+    }
+
+    public static void main(String[] args) throws Exception {
+        java.net.Authenticator.setDefault(new Downloader());
+
+        java.net.URI source = java.net.URI.create(args[0]);
+        java.nio.file.Path target =
+            java.nio.file.Paths.get(args[1]).toAbsolutePath().normalize();
+
+        try (java.io.InputStream inputStream =
+                 source.toURL().openStream()) {
+            java.nio.file.Files.copy(
+                inputStream,
+                target,
+                java.nio.file.StandardCopyOption.REPLACE_EXISTING
+            );
+        }
+    }
+}
+EOF
+
+  verbose "Compiling Downloader.java"
+
+  "$JAVACCMD" \
+    -d "$TMP_DOWNLOAD_DIR" \
+    "$javaSource" ||
+    return 1
+
+  verbose "Downloading with Java"
+
+  "$JAVACMD" \
+    -cp "$TMP_DOWNLOAD_DIR" \
+    -Dfile.encoding=UTF-8 \
+    Downloader \
+    "$distributionUrl" \
+    "$TMP_DOWNLOAD_DIR/$distributionUrlName"
+}
+
+download() {
+  set_java_home
+
+  if command -v wget >/dev/null; then
+    verbose "Found wget, using wget"
+    download_with_wget || return 1
+  elif command -v curl >/dev/null; then
+    verbose "Found curl, using curl"
+    download_with_curl || return 1
+  else
+    verbose "wget and curl unavailable, falling back to Java"
+    download_with_java || return 1
+  fi
+}
+
+download || die "Failed to download $distributionUrl"
+
+if [ -n "${distributionSha256Sum-}" ]; then
+  if command -v sha256sum >/dev/null; then
+    echo "$distributionSha256Sum  $TMP_DOWNLOAD_DIR/$distributionUrlName" |
+      sha256sum -c - >/dev/null ||
+      die "Checksum verification failed for $distributionUrlName"
+  elif command -v shasum >/dev/null; then
+    actualSha256Sum="$(
+      shasum -a 256 "$TMP_DOWNLOAD_DIR/$distributionUrlName" |
+        awk '{print $1}'
+    )"
+
+    [ "$actualSha256Sum" = "$distributionSha256Sum" ] ||
+      die "Checksum verification failed for $distributionUrlName"
+  else
+    die "Cannot verify Maven distribution checksum because sha256sum/shasum is unavailable"
+  fi
+fi
+
+printf '%s\n' "Installing Maven to $MAVEN_HOME"
+
+eval "$install" ||
+  die "Failed to unpack downloaded Maven distribution"
+
+extractedMavenDir="$MAVEN_HOME/$distributionUrlNameMain"
+
+if [ -d "$extractedMavenDir" ]; then
+  cp -a "$extractedMavenDir/." "$MAVEN_HOME/"
+  rm -rf "$extractedMavenDir"
+fi
+
+clean || :
+
+exec_maven "$@"

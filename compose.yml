@@ -1,0 +1,38 @@
+# Optional: starts MySQL only, for local development. Docker is never required —
+# see backend/README.md § Option A for running MySQL as a local Ubuntu service
+# instead. The Spring Boot application itself is never containerized here; run it
+# directly via IntelliJ or `./mvnw spring-boot:run` from backend/.
+#
+# Start:   docker compose up -d mysql
+# Status:  docker compose ps
+# Logs:    docker compose logs -f mysql
+# Stop (keeps data):   docker compose down
+# Delete data (DESTRUCTIVE, irreversible): docker compose down -v
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: onehelp-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: onehelp
+      MYSQL_USER: onehelp
+      MYSQL_PASSWORD: ${DB_PASSWORD:?set DB_PASSWORD in your environment or .env file}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?set MYSQL_ROOT_PASSWORD in your environment or .env file}
+    command:
+      - --character-set-server=utf8mb4
+      - --collation-server=utf8mb4_0900_ai_ci
+      - --default-time-zone=+00:00
+    ports:
+      - "3306:3306"
+    volumes:
+      - onehelp-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  onehelp-mysql-data:

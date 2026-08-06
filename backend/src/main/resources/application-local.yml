@@ -1,0 +1,17 @@
+# Activate with: ./mvnw spring-boot:run -Dspring-boot.run.profiles=local
+# Connects to either a locally-installed MySQL service or the optional
+# `docker compose up -d mysql` container — both use the same DB_* environment
+# variables, so this profile doesn't need to know or care which one is running.
+
+springdoc:
+  api-docs:
+    enabled: true
+  swagger-ui:
+    enabled: true
+    path: /swagger-ui.html
+
+logging:
+  level:
+    root: INFO
+    com.onehelp.backend: DEBUG
+    org.hibernate.SQL: DEBUG

@@ -1,0 +1,29 @@
+# Activate with: -Dspring.profiles.active=test (Maven Surefire's default test profile
+# in this project — see pom.xml). Points at a MySQL instance, never H2 — if no MySQL
+# is reachable in the current environment, DB-touching tests fail to start their
+# Spring context and must be reported as "not performed", not faked.
+
+spring:
+  datasource:
+    url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:onehelp_test}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
+    username: ${DB_USERNAME:onehelp}
+    password: ${DB_PASSWORD:onehelp}
+
+springdoc:
+  api-docs:
+    enabled: false
+  swagger-ui:
+    enabled: false
+
+# Test-only placeholder values — never used outside the test profile, never a
+# production secret.
+onehelp:
+  jwt:
+    secret: ${JWT_SECRET:test-only-secret-value-not-for-production-use-0123456789}
+  cors:
+    allowed-origins: http://localhost:5173
+
+logging:
+  level:
+    root: WARN
+    com.onehelp.backend: INFO
