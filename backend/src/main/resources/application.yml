@@ -2,6 +2,14 @@ spring:
   application:
     name: onehelp-backend
 
+  autoconfigure:
+    # No UserDetailsService/AuthenticationManager bean exists yet (see SecurityConfig) —
+    # without this exclusion, Spring Boot auto-configures an in-memory default user and
+    # logs a fresh random password on every startup. This app will never use in-memory
+    # basic auth (JWT bearer only, per ADR-1), so the auto-configuration is disabled
+    # outright rather than worked around.
+    exclude: org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration
+
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3306}/${DB_NAME:onehelp}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8
     username: ${DB_USERNAME:onehelp}
