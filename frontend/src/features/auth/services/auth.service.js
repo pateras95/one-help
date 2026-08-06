@@ -262,16 +262,14 @@ export async function getCurrentSession() {
 // ---------------------------------------------------------------------------
 // Temporary user-directory mocks — intentionally NOT switched by VITE_DATA_SOURCE.
 //
-// The backend has no equivalent endpoint yet (`GET /api/v1/users/{id}`,
-// `GET /api/v1/admin/users` are unimplemented — see
-// docs/backend-discovery/api-authentication.md § Known Limitations). Organizer and
-// admin features (`organizerActions.service.js`, `adminUsers.service.js`,
-// `AdminReportsView.vue`, `AdminActionsView.vue`, `AdminOrganizationsView.vue`,
-// `organizationIntegrity.js`) still call these two functions directly and must keep
-// working unmodified. They will be switched to the real API in the future "Users &
-// Roles" backend phase, alongside those endpoints actually being implemented — not
-// before, since pretending a nonexistent endpoint exists would break every one of
-// those callers.
+// `GET /api/v1/admin/users` and admin-user profile editing are real now (the Users &
+// Roles phase), and organization/organizer-application data is real too (the
+// Organizations phase) — but these two functions still have real remaining
+// consumers in domains that are still fully mocked: `organizerActions.service.js`,
+// `AdminActionsView.vue`, `AdminReportsView.vue` (Actions/Reports backend not built
+// yet). They will be switched to the real API once that phase ships, alongside
+// those endpoints actually existing — not before, since pretending a nonexistent
+// endpoint exists would break every one of those callers.
 // ---------------------------------------------------------------------------
 
 /**

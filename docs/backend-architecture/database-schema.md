@@ -210,6 +210,14 @@ express "at least one child row exists" as a table-level `CHECK` on the parent.
 - **Check**: `CHECK (status <> 'REJECTED' OR rejection_reason IS NOT NULL)`.
 - **Indexes**: `INDEX ix_organizations_status ON organizations (status)`.
 
+**Implementation note (Organizations & Organizer Applications phase)**: implemented
+essentially verbatim as `V2__organizations_schema.sql` — the `organizations` and
+`organization_categories` tables above match this design exactly, including the
+join-table normalization of categories. No `V1` change was needed. `Organization.
+organizerUserId`/`.reviewedBy` are mapped as raw `UUID` columns on the JPA entity, not
+`@ManyToOne` relationships — a Hibernate-level implementation choice, not a schema
+deviation (the FK constraints themselves are exactly as specified).
+
 ---
 
 ## `actions`

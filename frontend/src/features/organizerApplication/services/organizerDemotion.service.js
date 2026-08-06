@@ -1,73 +1,66 @@
-import { mockResponse } from '@/utils/mockResponse'
-import { ROLES } from '@/constants/roles'
-import { getOrganizationByOrganizerId, markOrganizationDeleted } from '@/features/admin/mocks/organizations.storage'
-import { getMergedActions, deleteActionsByIds } from '@/features/organizer/mocks/organizerActions.storage'
-import { deleteParticipationsByActionIds } from '@/features/participation/mocks/participations.storage'
-import { deleteAttendanceByActionIds } from '@/features/attendance/mocks/attendance.storage'
-import { deleteQrSessionsByActionIds } from '@/features/attendance/mocks/qrSession.storage'
-import { deleteReportsByActionIds } from '@/features/admin/mocks/reports.storage'
-import { deleteModerationRecordsByActionIds } from '@/features/admin/mocks/actionModeration.storage'
-import { deleteMembershipByOrganizationId } from '../mocks/organizationMembership.storage'
-import { setUserRoleOverride } from '@/features/auth/mocks/userRole.storage'
-import { logActivity } from '@/features/admin/mocks/activityLog.storage'
-import { ACTIVITY_ACTION_TYPE, ACTIVITY_TARGET_TYPE } from '@/features/admin/utils/activityLogTypes'
+import { httpClient, extractApiError } from '@/services/http'
 import { APPLICATION_ERROR } from '../utils/applicationErrors'
+import { ADMIN_ERROR } from '@/features/admin/utils/adminErrors'
 
 /**
- * Permanently demotes an organizer back to a volunteer, deleting their
- * organization and every record that depends on it. Used identically by
- * an admin's "Remove organizer and organization" action and by an
- * organizer's own self-service "Become a volunteer again" — this is the
- * single, central place that cascade runs, so neither caller duplicates
- * the cleanup logic.
+ * Real backend calls (`POST /api/v1/organizations/me/demote`,
+ * `POST /api/v1/admin/organizations/{organizationId}/demote` —
+ * docs/backend-discovery/api-organizations.md). Unlike the mock's single
+ * `demoteOrganizerToVolunteer(userId, initiatedBy)`, these are two distinct real
+ * endpoints (self-service never accepts a client-supplied id at all; the
+ * administrator path is keyed by the *organization's* id, not the organizer's
+ * user id, since that's what the admin's own organization list already has on
+ * hand) — so this file now exports two functions instead of one shared one.
+ * Both delete the organization and reset the owner's role transactionally on
+ * the backend; `actionsRemoved` in the response is always `0` in this phase
+ * (no Actions backend exists yet).
+ */
+
+function toDomainError(axiosError, codeMap) {
+  const apiError = extractApiError(axiosError)
+  const error = new Error(codeMap[apiError.code] ?? apiError.code)
+  error.code = apiError.code
+  error.fieldErrors = apiError.fieldErrors
+  error.status = apiError.status
+  return error
+}
+
+const SELF_CODE_MAP = {
+  'organizer.organizationMissing': APPLICATION_ERROR.NOT_ORGANIZER
+}
+
+const ADMIN_CODE_MAP = {
+  'organization.notFound': ADMIN_ERROR.NOT_FOUND,
+  'organizer.notOrganizer': ADMIN_ERROR.NOT_ORGANIZER,
+  'organizer.demotionNotAllowed': ADMIN_ERROR.DEMOTION_NOT_ALLOWED
+}
+
+/**
+ * Organizer self-demotion — always acts on the authenticated caller, never a
+ * client-supplied id.
  *
- * Runs as one logical (synchronous, in-memory) mock transaction: every
- * step below is scoped strictly to the ids collected for this one
- * organizer, so data belonging to any other organization/organizer is
- * never touched. Never deletes the user account itself — only reverts
- * its role and removes the organization-owned data.
- *
- * @param {string} userId - The organizer being demoted.
- * @param {string} initiatedBy - Who triggered this: the same `userId`
- *   for self-service, or an administrator's id. An admin-initiated
- *   demotion is recorded in the activity log; a self-demotion is not.
  * @returns {Promise<{organizationName: {el: string, en: string}, actionsRemoved: number}>}
  */
-export async function demoteOrganizerToVolunteer(userId, initiatedBy) {
-  if (!userId || !initiatedBy) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function demoteSelf() {
+  try {
+    const { data } = await httpClient.post('/organizations/me/demote')
+    return data
+  } catch (err) {
+    throw toDomainError(err, SELF_CODE_MAP)
   }
+}
 
-  const organization = getOrganizationByOrganizerId(userId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_ORGANIZER })
+/**
+ * Administrator-triggered demotion of the given organization's current owner.
+ *
+ * @param {string} organizationId
+ * @returns {Promise<{organizationName: {el: string, en: string}, actionsRemoved: number}>}
+ */
+export async function demoteOrganizerByOrganizationId(organizationId) {
+  try {
+    const { data } = await httpClient.post(`/admin/organizations/${organizationId}/demote`)
+    return data
+  } catch (err) {
+    throw toDomainError(err, ADMIN_CODE_MAP)
   }
-
-  const organizationName = organization.name
-  const actionIds = getMergedActions()
-    .filter((action) => action.organizerId === userId)
-    .map((action) => action.id)
-
-  deleteParticipationsByActionIds(actionIds)
-  deleteAttendanceByActionIds(actionIds)
-  deleteQrSessionsByActionIds(actionIds)
-  deleteReportsByActionIds(actionIds)
-  deleteModerationRecordsByActionIds(actionIds)
-  deleteActionsByIds(actionIds)
-
-  markOrganizationDeleted(organization.id)
-  deleteMembershipByOrganizationId(organization.id)
-  setUserRoleOverride(userId, ROLES.VOLUNTEER, initiatedBy)
-
-  if (initiatedBy !== userId) {
-    logActivity({
-      adminUserId: initiatedBy,
-      actionType: ACTIVITY_ACTION_TYPE.ORGANIZER_DEMOTED,
-      targetType: ACTIVITY_TARGET_TYPE.USER,
-      targetId: userId,
-      metadata: { name: organizationName.en, actionsRemoved: actionIds.length }
-    })
-  }
-
-  return mockResponse({ organizationName, actionsRemoved: actionIds.length })
 }

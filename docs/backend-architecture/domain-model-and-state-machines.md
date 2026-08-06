@@ -212,6 +212,16 @@ blocks the *user's* login, not their organization's public data; if the organize
 Invalid: `REJECTED → APPROVED/SUSPENDED` directly (must re-enter via `PENDING` through
 resubmission), `PENDING → SUSPENDED` (must be approved first).
 
+**Implementation note (Organizations & Organizer Applications phase)**: implemented
+exactly as this transition table specifies, including the side effects (role
+promotion + token revocation on approval, no token revocation on suspend/restore).
+Suspend/restore were made **idempotent** (calling either on an already-matching status
+returns `200` with the current state, no error) — the same choice already established
+for user suspend/reactivate in the Users & Roles phase — rather than returning a
+conflict code for the same-status case; this is a service-level behavior choice, not a
+change to the transition table itself. Full detail in
+`docs/backend-discovery/api-organizations.md`.
+
 ### OrganizationType
 
 `NGO`, `MUNICIPALITY`, `HEALTH_ORGANIZATION`, `VOLUNTEER_GROUP`, `ANIMAL_WELFARE`,

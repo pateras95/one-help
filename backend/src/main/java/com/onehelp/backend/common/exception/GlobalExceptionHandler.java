@@ -10,6 +10,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.authorization.AuthorizationDeniedException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -68,6 +70,48 @@ public class GlobalExceptionHandler {
                 fieldErrors,
                 traceId);
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    /**
+     * A malformed request body — most commonly an invalid enum literal (e.g. an
+     * {@code organizationType}/{@code category} value that isn't one of the accepted
+     * constants, error-contract.md's "enum binding failure is a 422 automatically"
+     * rule) — throws this from Jackson deserialization, before {@code @Valid} ever
+     * runs. Without this handler it would fall through to {@link #handleUnexpected}
+     * and leak a raw 500 for what is really a client input error.
+     */
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ApiErrorResponse> handleMalformedRequest(HttpMessageNotReadableException ex) {
+        String traceId = TraceIdFilter.currentTraceId();
+        log.warn("Malformed request body traceId={}", traceId);
+        ApiErrorResponse body = ApiErrorResponse.of(
+                HttpStatus.UNPROCESSABLE_ENTITY.value(),
+                "validation.failed",
+                "The request body is malformed or contains an invalid value.",
+                traceId);
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(body);
+    }
+
+    /**
+     * {@code @PreAuthorize} method-security failures throw this from inside the
+     * controller-invocation call stack — {@code @RestControllerAdvice}'s
+     * {@code HandlerExceptionResolver} resolves it here, inside the servlet dispatch,
+     * before it would ever reach {@code SecurityConfig}'s filter-level
+     * {@code RestAccessDeniedHandler} (which only ever sees a URL-level
+     * {@code authorizeHttpRequests} rejection, never a method-security one). Without
+     * this explicit handler, {@link #handleUnexpected} would catch it instead and
+     * return a misleading 500 for what is actually a normal 403.
+     */
+    @ExceptionHandler(AuthorizationDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthorizationDenied(AuthorizationDeniedException ex) {
+        String traceId = TraceIdFilter.currentTraceId();
+        log.warn("Authorization denied traceId={}", traceId);
+        ApiErrorResponse body = ApiErrorResponse.of(
+                HttpStatus.FORBIDDEN.value(),
+                "common.forbidden",
+                "You do not have permission to access this resource.",
+                traceId);
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(body);
     }
 
     @ExceptionHandler(Exception.class)

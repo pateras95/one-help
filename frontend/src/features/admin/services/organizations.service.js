@@ -1,230 +1,144 @@
-import { mockResponse } from '@/utils/mockResponse'
-import { getMergedOrganizations, upsertOrganization } from '../mocks/organizations.storage'
-import { logActivity } from '../mocks/activityLog.storage'
-import { ORGANIZATION_STATUS, canTransitionOrganization } from '../utils/organizationStatus'
-import { ACTIVITY_ACTION_TYPE, ACTIVITY_TARGET_TYPE } from '../utils/activityLogTypes'
+import { httpClient, extractApiError } from '@/services/http'
+import { normalizeApiOrganization, toApiOrganizationRequest } from '@/services/normalizeApiOrganization'
 import { ADMIN_ERROR } from '../utils/adminErrors'
-import { ROLES } from '@/constants/roles'
-import { setUserRoleOverride } from '@/features/auth/mocks/userRole.storage'
-import { createOwnerMembership, setMembershipStatusForOrganization } from '@/features/organizerApplication/mocks/organizationMembership.storage'
-import { APPLICATION_ERROR } from '@/features/organizerApplication/utils/applicationErrors'
-import { validateOrganizationPayload, buildOrganizationFieldsFromPayload } from '@/features/organizerApplication/utils/organizationValidation'
-
-function clone(org) {
-  return org ? { ...org } : org
-}
-
-function findOrganization(organizationId) {
-  return getMergedOrganizations().find((org) => org.id === organizationId) ?? null
-}
 
 /**
- * All organizations, pending first (so the admin sees what needs
- * attention first), then by submission date.
- *
- * @returns {Promise<Array<Object>>}
+ * Real backend calls (`GET/PATCH /api/v1/admin/organizations`, `.../approve`,
+ * `.../reject`, `.../suspend`, `.../restore` —
+ * docs/backend-discovery/api-organizations.md). Unlike the mock this replaces,
+ * none of these take an `adminUserId` parameter — the backend derives the
+ * acting administrator from the bearer token itself, the same way
+ * `adminUsers.service.js` already does.
  */
-export async function getOrganizations() {
-  const orgs = getMergedOrganizations().map(clone)
-  const statusOrder = { [ORGANIZATION_STATUS.PENDING]: 0, [ORGANIZATION_STATUS.APPROVED]: 1, [ORGANIZATION_STATUS.SUSPENDED]: 2, [ORGANIZATION_STATUS.REJECTED]: 3 }
-  orgs.sort((a, b) => {
-    const orderDiff = (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9)
-    if (orderDiff !== 0) return orderDiff
-    return new Date(b.submittedAt) - new Date(a.submittedAt)
-  })
-  return mockResponse(orgs)
+
+const CODE_MAP = {
+  'organization.notFound': ADMIN_ERROR.NOT_FOUND,
+  'organization.invalidTransition': ADMIN_ERROR.INVALID_TRANSITION,
+  'organization.reasonRequired': ADMIN_ERROR.REASON_REQUIRED,
+  'organization.duplicateName': ADMIN_ERROR.DUPLICATE_NAME,
+  'validation.failed': ADMIN_ERROR.INVALID_REQUEST
+}
+
+function toDomainError(axiosError) {
+  const apiError = extractApiError(axiosError)
+  const error = new Error(CODE_MAP[apiError.code] ?? apiError.code)
+  error.code = apiError.code
+  error.fieldErrors = apiError.fieldErrors
+  error.status = apiError.status
+  return error
 }
 
 /**
- * @param {string} organizationId
- * @returns {Promise<Object|null>}
+ * @param {Object} [filters]
+ * @param {number} [filters.page=0]
+ * @param {number} [filters.size=20]
+ * @param {string} [filters.search] - matches either name locale
+ * @param {string} [filters.status] - one of `ORGANIZATION_STATUS` (lowercase — uppercased for the API call)
+ * @returns {Promise<{content: Array<Object>, page: number, size: number, totalElements: number, totalPages: number}>}
  */
-export async function getOrganizationById(organizationId) {
-  if (!organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
-  }
-  return mockResponse(clone(findOrganization(organizationId)))
-}
+export async function getOrganizations({ page = 0, size = 20, search = '', status = '' } = {}) {
+  try {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    if (search) params.set('search', search)
+    if (status) params.set('status', status.toUpperCase())
 
-function applyTransition(organization, nextStatus, { adminUserId, reason = null } = {}) {
-  if (!canTransitionOrganization(organization.status, nextStatus)) {
-    return { error: ADMIN_ERROR.INVALID_TRANSITION }
+    const { data } = await httpClient.get(`/admin/organizations?${params.toString()}`)
+    return { ...data, content: data.content.map(normalizeApiOrganization) }
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const updated = {
-    ...organization,
-    status: nextStatus,
-    reviewedAt: new Date().toISOString(),
-    reviewedBy: adminUserId,
-    ...(nextStatus === ORGANIZATION_STATUS.REJECTED ? { rejectionReason: reason } : {})
-  }
-  upsertOrganization(updated)
-  return { organization: updated }
 }
 
 /**
- * @param {string} adminUserId
  * @param {string} organizationId
  * @returns {Promise<Object>}
  */
-export async function approveOrganization(adminUserId, organizationId) {
-  if (!adminUserId || !organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function getOrganizationById(organizationId) {
+  try {
+    const { data } = await httpClient.get(`/admin/organizations/${organizationId}`)
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const organization = findOrganization(organizationId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  const { organization: updated, error } = applyTransition(organization, ORGANIZATION_STATUS.APPROVED, { adminUserId })
-  if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
-
-  // Approval's two real-world effects, atomically from the caller's
-  // point of view: the applicant becomes the organization's owner
-  // (membership record — the authoritative organization relationship
-  // going forward), and gains organizer navigation/capability today via
-  // the mock role override (see `userRole.storage.js` for why this is a
-  // documented frontend simplification: a real backend would derive
-  // organizer capability from the membership record alone, with no
-  // separate role field to keep in sync).
-  createOwnerMembership(updated.id, updated.organizerUserId)
-  setUserRoleOverride(updated.organizerUserId, ROLES.ORGANIZER, adminUserId)
-
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.ORGANIZATION_APPROVED,
-    targetType: ACTIVITY_TARGET_TYPE.ORGANIZATION,
-    targetId: organizationId,
-    metadata: { name: updated.name.en }
-  })
-  return mockResponse(clone(updated))
 }
 
 /**
- * @param {string} adminUserId
+ * @param {string} organizationId
+ * @returns {Promise<Object>}
+ */
+export async function approveOrganization(organizationId) {
+  try {
+    const { data } = await httpClient.post(`/admin/organizations/${organizationId}/approve`)
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+/**
  * @param {string} organizationId
  * @param {string} reason
  * @returns {Promise<Object>}
  */
-export async function rejectOrganization(adminUserId, organizationId, reason) {
-  if (!adminUserId || !organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function rejectOrganization(organizationId, reason) {
+  try {
+    const { data } = await httpClient.post(`/admin/organizations/${organizationId}/reject`, { reason })
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  if (!reason || !reason.trim()) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.REASON_REQUIRED })
-  }
-  const organization = findOrganization(organizationId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  const { organization: updated, error } = applyTransition(organization, ORGANIZATION_STATUS.REJECTED, { adminUserId, reason: reason.trim() })
-  if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
-
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.ORGANIZATION_REJECTED,
-    targetType: ACTIVITY_TARGET_TYPE.ORGANIZATION,
-    targetId: organizationId,
-    metadata: { name: updated.name.en, reason: reason.trim() }
-  })
-  return mockResponse(clone(updated))
 }
 
 /**
- * @param {string} adminUserId
+ * Idempotent — suspending an already-suspended organization succeeds and
+ * returns the current state.
+ *
  * @param {string} organizationId
  * @returns {Promise<Object>}
  */
-export async function suspendOrganization(adminUserId, organizationId) {
-  if (!adminUserId || !organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function suspendOrganization(organizationId) {
+  try {
+    const { data } = await httpClient.post(`/admin/organizations/${organizationId}/suspend`)
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const organization = findOrganization(organizationId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  const { organization: updated, error } = applyTransition(organization, ORGANIZATION_STATUS.SUSPENDED, { adminUserId })
-  if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
-
-  // The membership itself is preserved (never removed), only its status
-  // mirrors the organization's — the owner's actual navigation/role is
-  // deliberately left untouched here; suspension is enforced through
-  // the existing organization gate on organizer actions, not by hiding
-  // the account's own organizer standing from them (they must still be
-  // able to see their own suspended state).
-  setMembershipStatusForOrganization(updated.id, ORGANIZATION_STATUS.SUSPENDED)
-
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.ORGANIZATION_SUSPENDED,
-    targetType: ACTIVITY_TARGET_TYPE.ORGANIZATION,
-    targetId: organizationId,
-    metadata: { name: updated.name.en }
-  })
-  return mockResponse(clone(updated))
 }
 
 /**
- * Restores a suspended organization back to `approved`.
+ * Idempotent — restoring an already-approved organization succeeds and
+ * returns the current state.
  *
- * @param {string} adminUserId
  * @param {string} organizationId
  * @returns {Promise<Object>}
  */
-export async function restoreOrganization(adminUserId, organizationId) {
-  if (!adminUserId || !organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function restoreOrganization(organizationId) {
+  try {
+    const { data } = await httpClient.post(`/admin/organizations/${organizationId}/restore`)
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const organization = findOrganization(organizationId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  const { organization: updated, error } = applyTransition(organization, ORGANIZATION_STATUS.APPROVED, { adminUserId })
-  if (error) return mockResponse(null, { shouldFail: true, errorMessage: error })
-
-  setMembershipStatusForOrganization(updated.id, ORGANIZATION_STATUS.APPROVED)
-
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.ORGANIZATION_RESTORED,
-    targetType: ACTIVITY_TARGET_TYPE.ORGANIZATION,
-    targetId: organizationId,
-    metadata: { name: updated.name.en }
-  })
-  return mockResponse(clone(updated))
 }
 
 /**
- * Edits an organization's own profile fields from the admin side (name,
- * type, description, contact info, address/municipality, categories) —
- * reuses the exact same field validation as the organizer-facing
- * application/profile flows, so an admin edit can never produce a
- * record the organizer-facing forms would themselves reject. Approval
- * status is unaffected — that only ever changes via the dedicated
- * approve/reject/suspend/restore transitions above.
+ * Edits an organization's own profile fields from the admin side — reuses the
+ * exact same field validation as the organizer-facing forms server-side, so an
+ * admin edit can never produce a record the organizer-facing forms would
+ * themselves reject. Approval status is unaffected.
  *
- * @param {string} adminUserId
  * @param {string} organizationId
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function updateOrganizationDetails(adminUserId, organizationId, payload) {
-  if (!adminUserId || !organizationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function updateOrganizationDetails(organizationId, payload) {
+  try {
+    const { data } = await httpClient.patch(
+      `/admin/organizations/${organizationId}`,
+      toApiOrganizationRequest(payload, false)
+    )
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const organization = findOrganization(organizationId)
-  if (!organization) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_FOUND })
-  }
-
-  const validationError = validateOrganizationPayload(payload, { excludeOrganizationId: organizationId, requireAcceptedTerms: false })
-  if (validationError) {
-    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
-  }
-
-  const updated = { ...organization, ...buildOrganizationFieldsFromPayload(payload) }
-  upsertOrganization(updated)
-  return mockResponse(clone(updated))
 }

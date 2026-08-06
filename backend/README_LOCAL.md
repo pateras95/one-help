@@ -15,7 +15,7 @@ OneHelp has three moving parts you run locally, plus one optional GUI tool:
 | **Frontend** | Vue 3 + Vuetify 3 web app (volunteers, organizers, admins) | `frontend/` |
 | **Backend** | Spring Boot 3 REST API (Java 21) | `backend/` |
 | **MySQL** | MySQL 8 database, schema managed by Flyway | your local MySQL install |
-| **phpMyAdmin** | Optional web GUI for browsing the MySQL database | not part of this repo — see § 9 |
+| **phpMyAdmin** | Optional web GUI for browsing the MySQL database | not part of this repo — see § 10 |
 
 **How they communicate:**
 
@@ -34,11 +34,16 @@ Browser  ──HTTP──▶  Frontend (Vite dev server, port 5173)
 The frontend never talks to MySQL directly — it only calls the backend's REST API. The
 backend is the only thing that ever touches the database.
 
-**Authentication is live against the real backend** (`POST /auth/register`,
-`/login`, `/refresh`, `/logout`, `GET /auth/me` — see
-`docs/backend-discovery/api-authentication.md`). Every other domain (organizations,
-actions, participation, attendance, QR, reports, admin) still runs entirely on the
-frontend's own local mock data; each is wired up feature by feature (see § 15).
+**Authentication, Users & Roles, and Organizations & Organizer Applications are live
+against the real backend** (`POST /auth/register`, `/login`, `/refresh`, `/logout`,
+`GET /auth/me`, `GET/PATCH /users/me`, the admin user directory at `/admin/users/**`,
+the organizer-application flow at `/organizer-applications/**`, the organizer's own
+organization at `/organizations/me`, and admin organization review at
+`/admin/organizations/**` — see `docs/backend-discovery/api-authentication.md`,
+`docs/backend-discovery/api-users-and-roles.md`, and
+`docs/backend-discovery/api-organizations.md`). Every other domain (actions,
+participation, attendance, QR, reports, admin activity) still runs entirely on the
+frontend's own local mock data; each is wired up feature by feature (see § 16).
 
 ---
 
@@ -70,7 +75,7 @@ git --version
 
 If `java -version` doesn't show `21`, or `node -v` doesn't show `v22.x`, install the
 correct version before continuing — mismatched versions are the #1 cause of "it works
-on my machine but not this one" (see § 14).
+on my machine but not this one" (see § 15).
 
 ---
 
@@ -152,7 +157,7 @@ Never point the application at the `root` account — always use this dedicated
 **6. Run the Flyway migration**
 
 You don't run Flyway by hand — it runs automatically the first time you start the
-backend (see § 7 and § 10). Just start the backend once and check the logs for:
+backend (see § 7 and § 11). Just start the backend once and check the logs for:
 
 ```
 Schema onehelp is up to date. No migration necessary.
@@ -212,7 +217,7 @@ the backend's port 8080.
   `engines.node` in `package.json` (`>=22`). Install Node 22 (e.g. via `nvm install 22`).
 - Blank page / console errors about Vuetify or missing plugins → delete
   `frontend/node_modules` and re-run `npm install`.
-- Port `5173` already bound → see § 14.
+- Port `5173` already bound → see § 15.
 
 ---
 
@@ -254,7 +259,7 @@ Started OneHelpBackendApplication in ~5 seconds
 ```
 
 No `WARN` or stack trace should appear. If you see
-`APPLICATION FAILED TO START`, jump to § 14.
+`APPLICATION FAILED TO START`, jump to § 15.
 
 **Expected URL:** `http://localhost:8080`
 **Swagger URL:** `http://localhost:8080/swagger-ui.html`
@@ -296,7 +301,84 @@ SELECT * FROM flyway_schema_history;
 
 ---
 
-## 9. phpMyAdmin
+## 9. Local Administrator Account & Organizer Application Testing (Development Only)
+
+There is **no public administrator-registration endpoint** — by design, permanently
+(see `docs/backend-discovery/api-users-and-roles.md`). The only way any account
+becomes an `ADMINISTRATOR` is a direct, one-time, local-development-only SQL
+statement (below). The only way any account becomes an `ORGANIZER` is the real
+organizer-application review workflow (submit → admin approve —
+`docs/backend-discovery/api-organizations.md`); there is no SQL shortcut needed or
+recommended for that path, since it's fully implemented and testable end to end
+through the running application. **Never** expose a role-change endpoint in the
+application itself to work around either of these.
+
+**1. Register a normal volunteer account** through the running frontend
+(`http://localhost:5173/register`), or via curl:
+
+```bash
+curl -X POST http://localhost:8080/api/v1/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"firstName":"Local","lastName":"Admin","email":"YOUR-LOCAL-EMAIL@example.local","password":"YOUR-OWN-PASSWORD"}'
+```
+
+**2. Promote it to `ADMINISTRATOR`** directly in MySQL (development-only — this is
+exactly the kind of manual step that must never become a public API):
+
+```sql
+UPDATE users SET role = 'ADMINISTRATOR' WHERE email = 'YOUR-LOCAL-EMAIL@example.local';
+```
+
+**3. Log in again** (or reload the page) so the frontend picks up the new role — the
+already-issued access token still has the old role baked in until it naturally
+expires (≤15 minutes) or a fresh login/refresh re-reads the live row.
+
+**To revert** a test account back to a normal volunteer once you're done:
+
+```sql
+UPDATE users SET role = 'VOLUNTEER' WHERE email = 'YOUR-LOCAL-EMAIL@example.local';
+```
+
+(An `ORGANIZER` can only ever be demoted back to `VOLUNTEER` through the real
+demotion endpoints — self-service, or an administrator's "remove organizer and
+organization" action in the Admin Organizations UI — never a direct SQL update to
+`role`, since demotion also deletes the organization row transactionally. Directly
+`UPDATE`-ing an organizer's role in SQL without going through the real endpoint would
+leave an orphaned `organizations` row behind — always use the application's own
+demotion flow, described below.)
+
+### Testing the organizer-application review flow end to end
+
+With the backend, frontend, and MySQL all running:
+
+1. Register a volunteer through `http://localhost:5173/register` (or curl, as above).
+2. Log in as that volunteer and open **Γίνε διοργανωτής** (Become Organizer) —
+   submit an application.
+3. Prepare (or reuse) a local administrator account per steps 1–2 above.
+4. Log in as the administrator, open **Οργανώσεις** (Admin Organizations) — the new
+   application appears with status **Εκκρεμεί έγκριση** (pending).
+5. **Reject** it with a reason to see the rejection-reason display and the
+   edit-and-resubmit flow as the volunteer, or **Approve** it directly to promote the
+   volunteer to `ORGANIZER` and create the organization.
+6. Verify directly in MySQL if you want to confirm the transaction:
+
+   ```sql
+   SELECT status, name_el, organizer_user_id FROM organizations;
+   SELECT email, role FROM users WHERE email = 'YOUR-VOLUNTEER-EMAIL@example.local';
+   ```
+
+7. The promoted user must **log in again** (their old refresh tokens were revoked as
+   part of the approval transaction) to receive an `ORGANIZER`-scoped session — this
+   is expected, not a bug.
+8. To test demotion: as the organizer, open **Η οργάνωσή μου** (My Organization) and
+   use the "Become a volunteer again" danger-zone action, or as the administrator, use
+   "Remove organizer and organization" from the Admin Organizations card. Either path
+   deletes the `organizations` row, resets the user's role to `VOLUNTEER`, and revokes
+   their refresh tokens — the same shared backend operation either way.
+
+---
+
+## 10. phpMyAdmin
 
 phpMyAdmin is **not part of this repository** — there's no Docker service or config
 file for it in `one-help/`. It's a general-purpose MySQL web GUI you can optionally
@@ -331,7 +413,7 @@ in § 8 can also do — it's a convenience, never a requirement.
 
 ---
 
-## 10. Flyway
+## 11. Flyway
 
 **What Flyway does:** Flyway is the *only* thing allowed to create or change database
 tables in this project. Hibernate is configured with `ddl-auto: validate` — it checks
@@ -377,7 +459,7 @@ V2__add_organizations_table.sql
 
 ---
 
-## 11. Daily Development Workflow
+## 12. Daily Development Workflow
 
 ```
 Start MySQL
@@ -399,7 +481,7 @@ Commit
 
 ---
 
-## 12. Useful URLs
+## 13. Useful URLs
 
 | What | URL |
 |---|---|
@@ -409,11 +491,11 @@ Commit
 | OpenAPI JSON | http://localhost:8080/v3/api-docs |
 | Actuator (base) | http://localhost:8080/actuator *(requires authentication)* |
 | Actuator Health | http://localhost:8080/actuator/health |
-| phpMyAdmin | http://localhost:8082 *(this machine's own local install only — see § 9; a different machine's install may live at a different URL)* |
+| phpMyAdmin | http://localhost:8082 *(this machine's own local install only — see § 10; a different machine's install may live at a different URL)* |
 
 ---
 
-## 13. Useful Commands
+## 14. Useful Commands
 
 **Git**
 
@@ -460,7 +542,7 @@ npm run build
 
 ---
 
-## 14. Troubleshooting
+## 15. Troubleshooting
 
 **Java not found**
 `java -version` errors or shows the wrong major version. Install JDK 21
@@ -485,7 +567,7 @@ kill <pid>
 Usually one of: MySQL isn't reachable (check § "MySQL not running" above), the
 `onehelp` user lacks a grant Flyway needs (re-check the `GRANT` statement in § 4), or
 an already-applied migration file was edited after the fact (checksum mismatch —
-Flyway will say so explicitly; never edit an applied migration, see § 10).
+Flyway will say so explicitly; never edit an applied migration, see § 11).
 
 **Swagger not opening**
 Confirm you started the backend with `-Dspring-boot.run.profiles=local` — Swagger is
@@ -508,7 +590,7 @@ into `~/.m2/wrapper/` — if that fails, check you have network access to
 
 ---
 
-## 15. Future Development Flow
+## 16. Future Development Flow
 
 This is the workflow the project follows from here on:
 
@@ -520,7 +602,7 @@ This is the workflow the project follows from here on:
   frontend** (its mock service swapped for a real `axios` call) rather than left
   backend-only and integrated later.
 - **Both frontend and backend always run locally together** during development — this
-  guide's § 11 workflow is the default loop, every day.
+  guide's § 12 workflow is the default loop, every day.
 - **Every backend feature is manually verified immediately after implementation** —
   through Swagger/curl at minimum, and through the connected frontend once that
   feature's mock has been swapped out — not left for a later, separate testing pass.

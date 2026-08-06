@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useRoute } from 'vue-router'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
@@ -11,11 +11,10 @@ import ErrorState from '@/components/feedback/ErrorState.vue'
 import EmptyState from '@/components/feedback/EmptyState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
-import { getApplicationForUser } from '@/features/organizerApplication/services/organizationApplication.service'
+import { getOrganizations } from '@/features/admin/services/organizations.service'
 import { localizeField } from '@/features/organizer/utils/localizeField'
 import { ROLES } from '@/constants/roles'
 import { ROUTES } from '@/constants/routes'
-import { matchesSearchQuery } from '@/utils/normalizeSearchText'
 import SignalStatusBadge from '@/components/common/SignalStatusBadge.vue'
 import AdminNavTabs from '../components/AdminNavTabs.vue'
 import AdminStatusChip from '../components/AdminStatusChip.vue'
@@ -32,20 +31,70 @@ const authStore = useAuthStore()
 
 const organizationsByUserId = ref({})
 
+/**
+ * Real pagination (docs/backend-discovery/api-users-and-roles.md) means only the
+ * organizers on the *current page* need their organization looked up — re-run
+ * whenever the page's own user list changes (a new page, a new search/filter, or a
+ * profile edit), not just once at mount.
+ *
+ * There is no admin endpoint to look up "the organization owned by user X" directly
+ * (docs/backend-discovery/api-organizations.md) — only a full admin organization list
+ * and a lookup by the organization's own id. A page of up to 100 organizations (the
+ * backend's own page-size cap) is fetched and matched against this page's organizer
+ * ids client-side; this cross-feature convenience link was already display-only in
+ * the mock it replaces, so an occasional miss beyond the first 100 organizations is
+ * an acceptable, documented limitation rather than a new page/endpoint.
+ */
 async function loadOrganizations() {
-  const organizerUsers = usersStore.users.filter((user) => user.role === ROLES.ORGANIZER)
-  const entries = await Promise.all(
-    organizerUsers.map(async (user) => [user.id, await getApplicationForUser(user.id)])
+  const organizerIds = new Set(usersStore.users.filter((user) => user.role === ROLES.ORGANIZER).map((user) => user.id))
+  if (organizerIds.size === 0) {
+    organizationsByUserId.value = {}
+    return
+  }
+  const result = await getOrganizations({ size: 100 })
+  organizationsByUserId.value = Object.fromEntries(
+    result.content.filter((org) => organizerIds.has(org.organizerUserId)).map((org) => [org.organizerUserId, org])
   )
-  organizationsByUserId.value = Object.fromEntries(entries)
 }
 
+watch(() => usersStore.users, loadOrganizations)
+
 onMounted(async () => {
+  // Seeds the store's own filter state directly (no debounce, no duplicate request)
+  // when a search term arrives via the URL — the debounced `setSearch` path is only
+  // for the user actually typing, below.
+  if (typeof route.query.q === 'string' && route.query.q) {
+    usersStore.search = route.query.q
+  }
   await usersStore.fetchUsers()
-  await loadOrganizations()
 })
 
 const searchQuery = ref(typeof route.query.q === 'string' ? route.query.q : '')
+watch(searchQuery, (value) => usersStore.setSearch(value))
+
+const roleFilter = ref('')
+watch(roleFilter, (value) => usersStore.setRole(value))
+
+const statusFilter = ref('')
+watch(statusFilter, (value) => usersStore.setStatus(value))
+
+const roleFilterOptions = computed(() => [
+  { title: t('admin.users.filters.allRoles'), value: '' },
+  { title: t('auth.roles.volunteer'), value: ROLES.VOLUNTEER },
+  { title: t('auth.roles.organizer'), value: ROLES.ORGANIZER },
+  { title: t('auth.roles.administrator'), value: ROLES.ADMINISTRATOR }
+])
+
+const statusFilterOptions = computed(() => [
+  { title: t('admin.users.filters.allStatuses'), value: '' },
+  { title: t('admin.accountStatus.active'), value: ACCOUNT_STATUS.ACTIVE },
+  { title: t('admin.accountStatus.suspended'), value: ACCOUNT_STATUS.SUSPENDED }
+])
+
+const currentPageDisplay = computed(() => usersStore.page + 1)
+function goToPage(pageDisplay) {
+  usersStore.setPage(pageDisplay - 1)
+}
 
 const viewDialog = ref({ open: false, user: null })
 const confirmDialog = ref({ open: false, user: null, action: null, loading: false })
@@ -75,19 +124,6 @@ function formatDate(isoString) {
 function organizationFor(user) {
   return organizationsByUserId.value[user.id] ?? null
 }
-
-const filteredUsers = computed(() => {
-  return usersStore.users.filter((user) => {
-    const org = organizationFor(user)
-    return matchesSearchQuery(searchQuery.value, [
-      `${user.firstName} ${user.lastName}`,
-      user.email,
-      t(`auth.roles.${user.role}`),
-      t(`admin.accountStatus.${user.status}`),
-      org ? localizeField(org.name, locale.value) : ''
-    ])
-  })
-})
 
 function openView(user) {
   viewDialog.value = { open: true, user }
@@ -179,18 +215,39 @@ const confirmMessage = computed(() => {
     <OHPageHeader eyebrow="OneHelp" :title="t('admin.users.pageTitle')" :subtitle="t('admin.users.subtitle')" />
     <AdminNavTabs />
 
-    <VTextField
-      v-model="searchQuery"
-      class="mb-2"
-      :label="t('admin.users.search.label')"
-      prepend-inner-icon="mdi-magnify"
-      variant="outlined"
-      density="comfortable"
-      clearable
-      hide-details
-    />
+    <div class="d-flex flex-wrap ga-3 mb-2">
+      <VTextField
+        v-model="searchQuery"
+        class="flex-grow-1"
+        style="min-width: 220px"
+        :label="t('admin.users.search.label')"
+        prepend-inner-icon="mdi-magnify"
+        variant="outlined"
+        density="comfortable"
+        clearable
+        hide-details
+      />
+      <VSelect
+        v-model="roleFilter"
+        style="min-width: 180px"
+        :label="t('admin.users.filters.roleLabel')"
+        :items="roleFilterOptions"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+      />
+      <VSelect
+        v-model="statusFilter"
+        style="min-width: 180px"
+        :label="t('admin.users.filters.statusLabel')"
+        :items="statusFilterOptions"
+        variant="outlined"
+        density="comfortable"
+        hide-details
+      />
+    </div>
     <p v-if="!usersStore.loading && !usersStore.error" class="text-caption text-textSecondary mb-4">
-      {{ t('admin.users.search.resultCount', { count: filteredUsers.length }) }}
+      {{ t('admin.users.search.resultCount', { count: usersStore.totalElements }) }}
     </p>
 
     <LoadingState v-if="usersStore.loading" :label="t('admin.common.loading')" />
@@ -203,14 +260,14 @@ const confirmMessage = computed(() => {
     />
 
     <EmptyState
-      v-else-if="usersStore.users.length === 0"
+      v-else-if="usersStore.users.length === 0 && !searchQuery && !roleFilter && !statusFilter"
       :title="t('admin.users.emptyTitle')"
       :message="t('admin.users.emptyMessage')"
       icon="mdi-account-multiple-outline"
     />
 
     <EmptyState
-      v-else-if="filteredUsers.length === 0"
+      v-else-if="usersStore.users.length === 0"
       :title="t('admin.users.search.noResultsTitle')"
       :message="t('admin.users.search.noResultsMessage')"
       icon="mdi-magnify"
@@ -218,7 +275,7 @@ const confirmMessage = computed(() => {
 
     <OHCard v-else class="pa-0">
       <VList :aria-label="t('admin.users.pageTitle')">
-        <template v-for="(user, index) in filteredUsers" :key="user.id">
+        <template v-for="(user, index) in usersStore.users" :key="user.id">
           <VDivider v-if="index > 0" />
           <VListItem>
             <div class="d-flex flex-wrap align-center justify-space-between ga-3 w-100 py-2">
@@ -314,6 +371,16 @@ const confirmMessage = computed(() => {
         </template>
       </VList>
     </OHCard>
+
+    <div v-if="usersStore.totalPages > 1" class="d-flex justify-center mt-4">
+      <VPagination
+        :model-value="currentPageDisplay"
+        :length="usersStore.totalPages"
+        :total-visible="7"
+        density="comfortable"
+        @update:model-value="goToPage"
+      />
+    </div>
 
     <VDialog :model-value="viewDialog.open" max-width="480" @update:model-value="viewDialog.open = false">
       <VCard v-if="viewDialog.user">

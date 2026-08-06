@@ -11,13 +11,13 @@ import static org.mockito.Mockito.when;
 import com.onehelp.backend.auth.dto.LoginRequest;
 import com.onehelp.backend.auth.dto.RegisterRequest;
 import com.onehelp.backend.auth.entity.RefreshToken;
-import com.onehelp.backend.auth.exception.AccountSuspendedException;
 import com.onehelp.backend.auth.exception.DuplicateEmailException;
 import com.onehelp.backend.auth.exception.InvalidPasswordException;
 import com.onehelp.backend.auth.exception.InvalidSessionException;
 import com.onehelp.backend.auth.exception.UnknownEmailException;
 import com.onehelp.backend.auth.service.AuthenticationService.IssuedSession;
 import com.onehelp.backend.auth.service.RefreshTokenService;
+import com.onehelp.backend.common.exception.AccountSuspendedException;
 import com.onehelp.backend.common.security.AccessTokenService;
 import com.onehelp.backend.users.dto.CurrentUserResponse;
 import com.onehelp.backend.users.entity.AccountStatus;
@@ -25,6 +25,7 @@ import com.onehelp.backend.users.entity.User;
 import com.onehelp.backend.users.entity.UserRole;
 import com.onehelp.backend.users.mapper.UserMapper;
 import com.onehelp.backend.users.repository.UserRepository;
+import com.onehelp.backend.users.service.UserService;
 import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
@@ -57,12 +58,15 @@ class AuthenticationServiceImplTest {
     @Mock
     private UserMapper userMapper;
 
+    @Mock
+    private UserService userService;
+
     private AuthenticationServiceImpl service;
 
     @BeforeEach
     void setUp() {
         service = new AuthenticationServiceImpl(
-                userRepository, refreshTokenService, accessTokenService, passwordEncoder, userMapper);
+                userRepository, refreshTokenService, accessTokenService, passwordEncoder, userMapper, userService);
     }
 
     private static User activeUser() {
@@ -255,33 +259,26 @@ class AuthenticationServiceImplTest {
         verify(refreshTokenService, never()).findByRawToken(any());
     }
 
+    /**
+     * {@code getCurrentUser} is a pure delegation to {@link UserService} (see its own
+     * Javadoc) — the actual not-found/suspended/live-row business logic is unit-tested
+     * once, in {@code UserServiceImplTest}, not duplicated here.
+     */
     @Test
-    void getCurrentUserReturnsTheLiveRow() {
+    void getCurrentUserDelegatesToUserService() {
         User user = activeUser();
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-        when(userMapper.toCurrentUserResponse(user)).thenReturn(
-                new CurrentUserResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(),
-                        user.getRole(), user.getStatus(), user.getAvatarInitials(), "el", Instant.now()));
+        CurrentUserResponse expected = new CurrentUserResponse(user.getId(), user.getFirstName(), user.getLastName(),
+                user.getEmail(), user.getRole(), user.getStatus(), user.getAvatarInitials(), "el", Instant.now());
+        when(userService.getCurrentUser(user.getId())).thenReturn(expected);
 
-        CurrentUserResponse response = service.getCurrentUser(user.getId());
-
-        assertThat(response.id()).isEqualTo(user.getId());
+        assertThat(service.getCurrentUser(user.getId())).isEqualTo(expected);
     }
 
     @Test
-    void getCurrentUserRejectsAnAccountThatNoLongerExists() {
+    void getCurrentUserPropagatesUserServiceExceptions() {
         UUID missingId = UUID.randomUUID();
-        when(userRepository.findById(missingId)).thenReturn(Optional.empty());
+        when(userService.getCurrentUser(missingId)).thenThrow(new InvalidSessionException());
 
         assertThatThrownBy(() -> service.getCurrentUser(missingId)).isInstanceOf(InvalidSessionException.class);
-    }
-
-    @Test
-    void getCurrentUserRejectsASuspendedAccount() {
-        User user = activeUser();
-        user.setStatus(AccountStatus.SUSPENDED);
-        when(userRepository.findById(user.getId())).thenReturn(Optional.of(user));
-
-        assertThatThrownBy(() -> service.getCurrentUser(user.getId())).isInstanceOf(AccountSuspendedException.class);
     }
 }

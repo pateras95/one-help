@@ -74,6 +74,14 @@ underlying resource (ADR-8) exposed at two paths for frontend-workflow clarity
 `OrganizerOrganizationView.vue`'s distinct current uses) — both resolve to the
 identical `organizations` row for the caller.
 
+**Implementation note**: implemented exactly at these paths, plus the admin surface
+(`GET/PATCH /admin/organizations`, `.../approve`, `.../reject`, `.../suspend`,
+`.../restore`, `.../demote` — all present, matching the "Admin — organizations" table
+below). No standalone public `GET /organizations/{id}` endpoint was added (no
+Actions-phase consumer exists yet to justify one) — see
+`docs/backend-discovery/api-organizations.md` for the full as-built contract and this
+deliberate scope decision.
+
 ---
 
 ## Organizer actions

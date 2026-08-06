@@ -1,212 +1,121 @@
-import { mockResponse } from '@/utils/mockResponse'
-import { getMergedOrganizations, getOrganizationByOrganizerId, upsertOrganization } from '@/features/admin/mocks/organizations.storage'
-import { ORGANIZATION_STATUS } from '@/features/admin/utils/organizationStatus'
-import { getMembershipByUserId } from '../mocks/organizationMembership.storage'
+import { httpClient, extractApiError } from '@/services/http'
+import { normalizeApiOrganization, toApiOrganizationRequest } from '@/services/normalizeApiOrganization'
 import { APPLICATION_ERROR } from '../utils/applicationErrors'
-import { validateOrganizationPayload, buildOrganizationFieldsFromPayload } from '../utils/organizationValidation'
 
-function clone(record) {
-  return record ? { ...record } : record
+/**
+ * Real backend calls (`GET/PATCH /api/v1/organizer-applications`,
+ * `.../resubmit`, `GET/PATCH /api/v1/organizations/me` —
+ * docs/backend-discovery/api-organizations.md). Unlike the mock this replaces,
+ * none of these take a `userId` parameter — the backend always derives the
+ * caller from the bearer token (`CurrentUserProvider`), never a client-supplied id.
+ *
+ * The mock's separate membership concept is gone entirely (ADR-4) — this file,
+ * and the store built on top of it, no longer have a `membership` notion at all.
+ */
+
+/**
+ * Maps a backend `ApiErrorResponse.code` to this feature's own pre-existing,
+ * unprefixed error vocabulary (`APPLICATION_ERROR`) so every existing
+ * `t(applicationErrorKey(err.message))` call site keeps working unchanged.
+ */
+const CODE_MAP = {
+  'organization.alreadyHasOrganization': APPLICATION_ERROR.ALREADY_HAS_ORGANIZATION,
+  'organization.notPending': APPLICATION_ERROR.NOT_PENDING,
+  'organization.notRejected': APPLICATION_ERROR.NOT_REJECTED,
+  'organization.termsNotAccepted': APPLICATION_ERROR.TERMS_NOT_ACCEPTED,
+  'organization.duplicateName': APPLICATION_ERROR.DUPLICATE_NAME,
+  'organization.notFound': APPLICATION_ERROR.NOT_FOUND,
+  'organization.invalidTransition': APPLICATION_ERROR.INVALID_REQUEST,
+  'organizer.organizationMissing': APPLICATION_ERROR.NOT_ORGANIZER,
+  'validation.failed': APPLICATION_ERROR.INVALID_REQUEST
 }
 
-function findOwnedApplication(applicationId, userId) {
-  const organization = getMergedOrganizations().find((org) => org.id === applicationId)
-  if (!organization || organization.organizerUserId !== userId) return null
-  return organization
+function toDomainError(axiosError) {
+  const apiError = extractApiError(axiosError)
+  const error = new Error(CODE_MAP[apiError.code] ?? apiError.code)
+  error.code = apiError.code
+  error.fieldErrors = apiError.fieldErrors
+  error.status = apiError.status
+  return error
 }
 
 /**
  * The current user's own organization/application record, regardless of
  * status — `null` if they have never submitted one.
  *
- * @param {string} userId
  * @returns {Promise<Object|null>}
  */
-export async function getApplicationForUser(userId) {
-  if (!userId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function getApplicationForUser() {
+  try {
+    const { data } = await httpClient.get('/organizer-applications/me')
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    const apiError = extractApiError(err)
+    if (apiError.code === 'organization.notFound') return null
+    throw toDomainError(err)
   }
-  return mockResponse(clone(getOrganizationByOrganizerId(userId)))
 }
 
 /**
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-export async function getUserOrganizationMembership(userId) {
-  if (!userId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
-  }
-  return mockResponse(clone(getMembershipByUserId(userId)))
-}
-
-/**
- * The full organization record for a user with an existing membership
- * (i.e. currently or previously approved) — used by account-summary
- * displays that only care about "their" organization, not the raw
- * application state.
- *
- * @param {string} userId
- * @returns {Promise<Object|null>}
- */
-export async function getOrganizationForUser(userId) {
-  if (!userId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
-  }
-  const membership = getMembershipByUserId(userId)
-  if (!membership) return mockResponse(null)
-  const organization = getMergedOrganizations().find((org) => org.id === membership.organizationId)
-  return mockResponse(organization ? clone(organization) : null)
-}
-
-/**
- * Submits a brand-new organization application. Blocked entirely if the
- * user already has an organization record of any status — including
- * `suspended` (so a suspended organizer can't bypass their suspension
- * by starting over) and `rejected` (they must use
- * `resubmitRejectedApplication` instead, which preserves history).
- *
- * @param {string} userId
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function submitOrganizationApplication(userId, payload) {
-  if (!userId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function submitOrganizationApplication(payload) {
+  try {
+    const { data } = await httpClient.post('/organizer-applications', toApiOrganizationRequest(payload, true))
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-
-  const existing = getOrganizationByOrganizerId(userId)
-  if (existing) {
-    const code = existing.status === ORGANIZATION_STATUS.SUSPENDED
-      ? APPLICATION_ERROR.SUSPENDED
-      : APPLICATION_ERROR.ALREADY_HAS_ORGANIZATION
-    return mockResponse(null, { shouldFail: true, errorMessage: code })
-  }
-
-  const validationError = validateOrganizationPayload(payload)
-  if (validationError) {
-    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
-  }
-
-  const organization = {
-    id: crypto.randomUUID(),
-    organizerUserId: userId,
-    ...buildOrganizationFieldsFromPayload(payload),
-    status: ORGANIZATION_STATUS.PENDING,
-    submittedAt: new Date().toISOString(),
-    reviewedAt: null,
-    reviewedBy: null,
-    rejectionReason: null,
-    previousRejectionReason: null
-  }
-
-  upsertOrganization(organization)
-  return mockResponse(clone(organization))
 }
 
 /**
- * Edits a still-pending application in place — role/status never
- * change here (only an admin decision can do that).
- *
- * @param {string} userId
  * @param {string} applicationId
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function updatePendingApplication(userId, applicationId, payload) {
-  if (!userId || !applicationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function updatePendingApplication(applicationId, payload) {
+  try {
+    const { data } = await httpClient.patch(
+      `/organizer-applications/${applicationId}`,
+      toApiOrganizationRequest(payload, true)
+    )
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const existing = findOwnedApplication(applicationId, userId)
-  if (!existing) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_FOUND })
-  }
-  if (existing.status !== ORGANIZATION_STATUS.PENDING) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_PENDING })
-  }
-
-  const validationError = validateOrganizationPayload(payload, { excludeOrganizationId: applicationId })
-  if (validationError) {
-    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
-  }
-
-  const updated = { ...existing, ...buildOrganizationFieldsFromPayload(payload) }
-  upsertOrganization(updated)
-  return mockResponse(clone(updated))
 }
 
 /**
- * Resubmits a rejected application with corrected details — moves it
- * back to `pending` and keeps the previous rejection reason around
- * (`previousRejectionReason`) as context for the next review, while
- * clearing the active `rejectionReason` since it no longer applies.
- *
- * @param {string} userId
  * @param {string} applicationId
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function resubmitRejectedApplication(userId, applicationId, payload) {
-  if (!userId || !applicationId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function resubmitRejectedApplication(applicationId, payload) {
+  try {
+    const { data } = await httpClient.post(
+      `/organizer-applications/${applicationId}/resubmit`,
+      toApiOrganizationRequest(payload, true)
+    )
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const existing = findOwnedApplication(applicationId, userId)
-  if (!existing) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_FOUND })
-  }
-  if (existing.status !== ORGANIZATION_STATUS.REJECTED) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_REJECTED })
-  }
-
-  const validationError = validateOrganizationPayload(payload, { excludeOrganizationId: applicationId })
-  if (validationError) {
-    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
-  }
-
-  const updated = {
-    ...existing,
-    ...buildOrganizationFieldsFromPayload(payload),
-    status: ORGANIZATION_STATUS.PENDING,
-    submittedAt: new Date().toISOString(),
-    reviewedAt: null,
-    reviewedBy: null,
-    previousRejectionReason: existing.rejectionReason,
-    rejectionReason: null
-  }
-  upsertOrganization(updated)
-  return mockResponse(clone(updated))
 }
 
 /**
  * Edits an already-approved (or currently suspended) organization's own
- * profile fields. Suspended organizers may still keep their contact/
- * profile information up to date — only publishing actions is blocked
- * while suspended (enforced separately by `checkOrganizationGate` in
- * the organizer-actions service). Pending/rejected applications use
- * `updatePendingApplication`/`resubmitRejectedApplication` instead.
+ * profile fields (`PATCH /organizations/me`) — allowed only while
+ * `APPROVED`/`SUSPENDED`, enforced server-side.
  *
- * @param {string} userId
  * @param {Object} payload
  * @returns {Promise<Object>}
  */
-export async function updateOrganizationProfile(userId, payload) {
-  if (!userId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
+export async function updateOrganizationProfile(payload) {
+  try {
+    const { data } = await httpClient.patch('/organizations/me', toApiOrganizationRequest(payload, false))
+    return normalizeApiOrganization(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  const existing = getOrganizationByOrganizerId(userId)
-  if (!existing) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.NOT_ORGANIZER })
-  }
-  if (existing.status !== ORGANIZATION_STATUS.APPROVED && existing.status !== ORGANIZATION_STATUS.SUSPENDED) {
-    return mockResponse(null, { shouldFail: true, errorMessage: APPLICATION_ERROR.INVALID_REQUEST })
-  }
-
-  const validationError = validateOrganizationPayload(payload, { excludeOrganizationId: existing.id, requireAcceptedTerms: false })
-  if (validationError) {
-    return mockResponse(null, { shouldFail: true, errorMessage: validationError })
-  }
-
-  const updated = { ...existing, ...buildOrganizationFieldsFromPayload(payload) }
-  upsertOrganization(updated)
-  return mockResponse(clone(updated))
 }

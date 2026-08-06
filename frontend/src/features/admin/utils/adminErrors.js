@@ -13,7 +13,10 @@ export const ADMIN_ERROR = {
   DUPLICATE_OPEN_REPORT: 'duplicateOpenReport',
   CANNOT_REPORT_OWN_ACTION: 'cannotReportOwnAction',
   DUPLICATE_EMAIL: 'duplicateEmail',
-  CAPACITY_BELOW_CONFIRMED: 'capacityBelowConfirmed'
+  CAPACITY_BELOW_CONFIRMED: 'capacityBelowConfirmed',
+  DUPLICATE_NAME: 'duplicateName',
+  NOT_ORGANIZER: 'notOrganizer',
+  DEMOTION_NOT_ALLOWED: 'demotionNotAllowed'
 }
 
 const KNOWN_CODES = new Set(Object.values(ADMIN_ERROR))

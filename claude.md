@@ -4,15 +4,27 @@
 
 OneHelp is a responsive web application that connects volunteers with verified social, environmental, health and emergency-support actions.
 
-A Spring Boot backend now exists (`backend/`) and the **authentication domain is
-live**: the frontend's login/register/logout/session-restoration call the real API
-(`http://localhost:8080/api/v1/auth/**`) rather than mocks — see
-`docs/backend-discovery/api-authentication.md` for the contract. Every other domain
-(organizations, actions, participation, attendance, QR, reports, admin, moderation)
-remains frontend-only and must keep using local mock data and mock service modules
-until that domain's own backend phase ships (`docs/backend-architecture/
-local-development-and-integration.md` § Incremental implementation order). Do not
-implement backend code for those domains from the frontend side of this repository.
+A Spring Boot backend now exists (`backend/`) and the **authentication, Users &
+Roles, and Organizations & Organizer Applications domains are live**: the frontend's
+login/register/logout/session-restoration, the admin user directory
+(list/search/filter/details/edit/suspend/reactivate), the volunteer
+organizer-application flow (submit/edit-pending/resubmit), the organizer's own
+organization (view/edit/self-demote), and admin organization review
+(list/search/filter/details/edit/approve/reject/suspend/restore/demote) all call the
+real API (`http://localhost:8080/api/v1/{auth,users,admin/users,organizer-applications,
+organizations,admin/organizations}/**`) rather than mocks — see
+`docs/backend-discovery/api-authentication.md`,
+`docs/backend-discovery/api-users-and-roles.md`, and
+`docs/backend-discovery/api-organizations.md` for the contracts. There is still no
+generic role-change endpoint anywhere: a volunteer becomes an organizer only through
+the real application-approval workflow, and an organizer only ever reverts to a
+volunteer through the real, transactional demotion operation (self-service or
+administrator-triggered) — never a direct role edit. Every other domain (actions,
+participation, attendance, QR, reports, admin activity) remains frontend-only and must
+keep using local mock data and mock service modules until that domain's own backend
+phase ships (`docs/backend-architecture/local-development-and-integration.md` §
+Incremental implementation order). Do not implement backend code for those domains
+from the frontend side of this repository.
 
 ## Permanently excluded features
 
@@ -58,7 +70,7 @@ Rules for this permanent constraint:
 * Do not implement, stub, or route toward any of the above, even partially or behind a flag.
 * Do not reserve enum values, fields, or comments implying a future multi-manager/multi-organizer feature.
 * Do not propose any of the above in a "Suggested Next Feature" section or any other forward-looking note.
-* A user becomes an organizer only by submitting an organization application that an administrator approves. An organizer only ever reverts to a volunteer through the central demotion operation (`demoteOrganizerToVolunteer`) — never a direct role edit.
+* A user becomes an organizer only by submitting an organization application that an administrator approves (`POST /api/v1/admin/organizations/{id}/approve`, real backend). An organizer only ever reverts to a volunteer through the shared, transactional demotion operation — self-service (`POST /api/v1/organizations/me/demote`) or administrator-triggered (`POST /api/v1/admin/organizations/{id}/demote`), both backed by the same `OrganizerDemotionService.demote()` — never a direct role edit.
 * If a future request explicitly asks for one of these, point back to this section rather than implementing it, and ask the user to confirm they want to permanently change project scope before proceeding.
 
 ## Technology stack

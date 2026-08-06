@@ -4,16 +4,13 @@ const STORAGE_KEY = 'onehelp.auth.userRoleOverride'
 
 /**
  * A persisted override of a user's mock `role` field — needed because
- * `auth.service.js`'s in-memory `usersDb` resets to the static fixture
- * on every reload, the same reason account *status* has its own overlay
- * (`admin/mocks/userStatus.storage.js`). Organizer-application approval
- * is currently the only thing that ever sets this.
- *
- * Frontend mock simplification, documented deliberately: this app has a
- * single `role` field rather than a real permissions/membership system.
- * A real backend would instead derive organizer capability from
- * `organizationMembership` records directly, with no separate "role"
- * override to keep in sync. See `docs/reports/2026-08-03-organizer-application-onboarding.md`.
+ * `auth.service.js`'s in-memory `usersDb` resets to the static fixture on every
+ * reload, the same reason account *status* has its own overlay
+ * (`admin/mocks/userStatus.storage.js`). Relevant only in mock-auth mode
+ * (`VITE_DATA_SOURCE=mock`) now — the real backend (Organizations phase) has no
+ * override concept at all: `users.role` is updated directly, in the same
+ * transaction as organizer-application approval/demotion (ADR-4/ADR-8), with no
+ * separate membership table or role field to keep in sync.
  */
 function isValidRecord(record) {
   return Boolean(

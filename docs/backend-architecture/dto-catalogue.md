@@ -136,6 +136,27 @@ Same fields as `OrganizationApplicationRequest` minus `acceptedTerms` (already
 accepted at submission) — used for both organizer self-edit (`approved`/`suspended`
 only, per the mock's own gating) and admin edit.
 
+### Implementation note (Organizations & Organizer Applications phase)
+
+The design above was implemented essentially as documented, with two small
+clarifications:
+
+- **`OrganizationResponse.organizer`** is always populated (self-view included), not
+  admin-only as this section's phrasing could be read — there is no harm in a caller
+  seeing the resolved summary of their own identity, and keeping one populated form
+  rather than two DTO variants avoids an extra shape.
+- **`OrganizationResponse.version`** (`Long`) was added, mirroring `UserDetailsResponse`'s
+  existing `version` field, for optimistic-lock awareness on the edit forms.
+- **`OrganizerDemotionResponse(organizationName: {el, en}, actionsRemoved: int)`** is
+  the named DTO backing the `{organizationName, actionsRemoved}` shape this document's
+  REST design already specified inline for the two demotion endpoints —
+  `actionsRemoved` is always `0` in this phase (no Actions backend exists yet).
+- No `OrganizationPublicResponse`/`OrganizationAdminResponse`/
+  `OrganizationStatusChangeResponse` were introduced — every organization endpoint
+  (including suspend/restore/approve/reject) returns the one `OrganizationResponse`
+  shape, per this document's own "same DTO" design above. See
+  `docs/backend-discovery/api-organizations.md` for the full as-built contract.
+
 ---
 
 ## Actions

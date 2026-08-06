@@ -110,6 +110,17 @@ item 2, "Critical before backend implementation").
   item 2) where nine independent localStorage writes could partially fail and leave an
   orphaned state.
 
+**Implementation note (Organizations & Organizer Applications phase)**: Actions,
+participation, attendance, reports, and moderation tables do not exist yet (explicitly
+out of scope this phase), so the cascade steps 1–5 above are not yet implemented —
+`OrganizerDemotionServiceImpl.demote()` currently only performs step 6 (the
+`organizations` row delete) plus the role/token updates, and always reports
+`actionsRemoved: 0`. The method is structured so the future Actions phase adds its
+missing cascade calls inside this same transaction, before the organization delete,
+without changing the method's shared self-service/admin-triggered contract. Both call
+sites (self-demotion, admin-triggered demotion) already delegate to this one method,
+exactly as designed.
+
 ### Policy note: reports are deleted, not archived, on demotion
 
 **Decision**: reports tied to the demoted organizer's actions are hard-deleted along

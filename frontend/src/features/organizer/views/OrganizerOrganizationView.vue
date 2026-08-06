@@ -11,7 +11,7 @@ import LoadingState from '@/components/feedback/LoadingState.vue'
 import { useNotificationsStore } from '@/stores/notifications.store'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import { useOrganizationApplicationStore } from '@/features/organizerApplication/stores/organizationApplication.store'
-import { demoteOrganizerToVolunteer } from '@/features/organizerApplication/services/organizerDemotion.service'
+import { demoteSelf } from '@/features/organizerApplication/services/organizerDemotion.service'
 import OrganizationApplicationForm from '@/features/organizerApplication/components/OrganizationApplicationForm.vue'
 import OrganizerDemotionConfirmDialog from '@/features/organizerApplication/components/OrganizerDemotionConfirmDialog.vue'
 import { applicationErrorKey } from '@/features/organizerApplication/utils/applicationErrors'
@@ -83,7 +83,7 @@ async function handleSave(payload) {
 async function handleDemote() {
   demoting.value = true
   try {
-    const result = await demoteOrganizerToVolunteer(authStore.currentUser.id, authStore.currentUser.id)
+    const result = await demoteSelf()
     showDemotionDialog.value = false
     await authStore.refreshCurrentUser()
     notificationsStore.notify(

@@ -27,6 +27,9 @@ export default {
     cannotReportOwnAction: 'Δεν μπορείς να αναφέρεις τη δική σου δράση.',
     duplicateEmail: 'Αυτό το email χρησιμοποιείται ήδη από άλλο λογαριασμό.',
     capacityBelowConfirmed: 'Η χωρητικότητα δεν μπορεί να είναι μικρότερη από τους ήδη επιβεβαιωμένους συμμετέχοντες.',
+    duplicateName: 'Αυτή η επωνυμία χρησιμοποιείται ήδη από άλλη οργάνωση.',
+    notOrganizer: 'Αυτός ο χρήστης δεν είναι πλέον διοργανωτής.',
+    demotionNotAllowed: 'Αυτή η υποβάθμιση δεν επιτρέπεται.',
     generic: 'Κάτι πήγε στραβά. Δοκίμασε ξανά.'
   },
   accountStatus: {
@@ -90,7 +93,13 @@ export default {
       label: 'Αναζήτηση χρηστών',
       resultCount: '{count} αποτελέσματα',
       noResultsTitle: 'Κανένα αποτέλεσμα',
-      noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
+      noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης ή φίλτρα.'
+    },
+    filters: {
+      roleLabel: 'Ρόλος',
+      statusLabel: 'Κατάσταση',
+      allRoles: 'Όλοι οι ρόλοι',
+      allStatuses: 'Όλες οι καταστάσεις'
     },
     editDialog: {
       title: 'Επεξεργασία χρήστη',
@@ -138,6 +147,10 @@ export default {
       resultCount: '{count} αποτελέσματα',
       noResultsTitle: 'Κανένα αποτέλεσμα',
       noResultsMessage: 'Δοκίμασε διαφορετικούς όρους αναζήτησης.'
+    },
+    filters: {
+      statusLabel: 'Κατάσταση',
+      allStatuses: 'Όλες οι καταστάσεις'
     },
     editDialog: {
       title: 'Επεξεργασία «{name}»',

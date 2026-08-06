@@ -3,13 +3,13 @@ package com.onehelp.backend.auth.service.impl;
 import com.onehelp.backend.auth.dto.LoginRequest;
 import com.onehelp.backend.auth.dto.RegisterRequest;
 import com.onehelp.backend.auth.entity.RefreshToken;
-import com.onehelp.backend.auth.exception.AccountSuspendedException;
 import com.onehelp.backend.auth.exception.DuplicateEmailException;
 import com.onehelp.backend.auth.exception.InvalidPasswordException;
 import com.onehelp.backend.auth.exception.InvalidSessionException;
 import com.onehelp.backend.auth.exception.UnknownEmailException;
 import com.onehelp.backend.auth.service.AuthenticationService;
 import com.onehelp.backend.auth.service.RefreshTokenService;
+import com.onehelp.backend.common.exception.AccountSuspendedException;
 import com.onehelp.backend.common.security.AccessTokenService;
 import com.onehelp.backend.common.web.TraceIdFilter;
 import com.onehelp.backend.users.dto.CurrentUserResponse;
@@ -17,6 +17,7 @@ import com.onehelp.backend.users.entity.AccountStatus;
 import com.onehelp.backend.users.entity.User;
 import com.onehelp.backend.users.mapper.UserMapper;
 import com.onehelp.backend.users.repository.UserRepository;
+import com.onehelp.backend.users.service.UserService;
 import java.time.Instant;
 import java.util.UUID;
 import org.slf4j.Logger;
@@ -36,18 +37,21 @@ public class AuthenticationServiceImpl implements AuthenticationService {
     private final AccessTokenService accessTokenService;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final UserService userService;
 
     public AuthenticationServiceImpl(
             UserRepository userRepository,
             RefreshTokenService refreshTokenService,
             AccessTokenService accessTokenService,
             PasswordEncoder passwordEncoder,
-            UserMapper userMapper) {
+            UserMapper userMapper,
+            UserService userService) {
         this.userRepository = userRepository;
         this.refreshTokenService = refreshTokenService;
         this.accessTokenService = accessTokenService;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
+        this.userService = userService;
     }
 
     @Override
@@ -132,14 +136,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         });
     }
 
+    /**
+     * Delegates to {@link UserService} — {@code /auth/me} and {@code /users/me} are
+     * two routes onto the exact same "read my own profile from my own token" behavior
+     * (risks-and-open-decisions.md item 18 recommends exactly one aggregate owning
+     * this, not two independently-maintained implementations).
+     */
     @Override
     @Transactional(readOnly = true)
     public CurrentUserResponse getCurrentUser(UUID currentUserId) {
-        User user = userRepository.findById(currentUserId).orElseThrow(InvalidSessionException::new);
-        if (user.getStatus() == AccountStatus.SUSPENDED) {
-            throw new AccountSuspendedException();
-        }
-        return toResponse(user);
+        return userService.getCurrentUser(currentUserId);
     }
 
     private IssuedSession issueSession(User user, String userAgent) {

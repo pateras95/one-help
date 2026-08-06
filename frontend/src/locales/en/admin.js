@@ -27,6 +27,9 @@ export default {
     cannotReportOwnAction: 'You cannot report your own action.',
     duplicateEmail: 'This email is already used by another account.',
     capacityBelowConfirmed: 'Capacity cannot be lower than already confirmed participants.',
+    duplicateName: 'This name is already used by another organization.',
+    notOrganizer: 'This user is not currently an organizer.',
+    demotionNotAllowed: 'This demotion is not allowed.',
     generic: 'Something went wrong. Please try again.'
   },
   accountStatus: {
@@ -90,7 +93,13 @@ export default {
       label: 'Search users',
       resultCount: '{count} results',
       noResultsTitle: 'No results',
-      noResultsMessage: 'Try different search terms.'
+      noResultsMessage: 'Try different search terms or filters.'
+    },
+    filters: {
+      roleLabel: 'Role',
+      statusLabel: 'Status',
+      allRoles: 'All roles',
+      allStatuses: 'All statuses'
     },
     editDialog: {
       title: 'Edit user',
@@ -138,6 +147,10 @@ export default {
       resultCount: '{count} results',
       noResultsTitle: 'No results',
       noResultsMessage: 'Try different search terms.'
+    },
+    filters: {
+      statusLabel: 'Status',
+      allStatuses: 'All statuses'
     },
     editDialog: {
       title: 'Edit "{name}"',

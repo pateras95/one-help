@@ -3,7 +3,6 @@ import { defineStore } from 'pinia'
 import { useAuthStore } from '@/features/auth/stores/auth.store'
 import {
   getApplicationForUser,
-  getUserOrganizationMembership,
   submitOrganizationApplication as submitRequest,
   updatePendingApplication as updateRequest,
   resubmitRejectedApplication as resubmitRequest,
@@ -11,15 +10,16 @@ import {
 } from '../services/organizationApplication.service'
 
 /**
- * Owns the current user's own organization application/membership state
- * — not the admin-wide organizations list (see `admin/stores/
- * adminOrganizations.store.js` for that).
+ * Owns the current user's own organization application state — not the
+ * admin-wide organizations list (see `admin/stores/adminOrganizations.store.js`
+ * for that). The mock's separate `membership` concept is gone entirely
+ * (ADR-4/ADR-8): `application` alone (mapped from the real `OrganizationResponse`)
+ * carries everything this store's consumers ever read.
  */
 export const useOrganizationApplicationStore = defineStore('organizationApplication', () => {
   const authStore = useAuthStore()
 
   const application = ref(null)
-  const membership = ref(null)
   const loading = ref(false)
   const error = ref(null)
 
@@ -31,20 +31,15 @@ export const useOrganizationApplicationStore = defineStore('organizationApplicat
     const userId = currentUserId()
     if (!userId) {
       application.value = null
-      membership.value = null
       return
     }
 
     loading.value = true
     error.value = null
     try {
-      const [applicationResult, membershipResult] = await Promise.all([
-        getApplicationForUser(userId),
-        getUserOrganizationMembership(userId)
-      ])
+      const result = await getApplicationForUser()
       if (currentUserId() === userId) {
-        application.value = applicationResult
-        membership.value = membershipResult
+        application.value = result
       }
     } catch (err) {
       if (currentUserId() === userId) error.value = err.message
@@ -54,47 +49,41 @@ export const useOrganizationApplicationStore = defineStore('organizationApplicat
   }
 
   async function submit(payload) {
-    const userId = currentUserId()
-    if (!userId) throw new Error('invalidRequest')
-    const result = await submitRequest(userId, payload)
+    if (!currentUserId()) throw new Error('invalidRequest')
+    const result = await submitRequest(payload)
     application.value = result
     return result
   }
 
   async function updatePending(applicationId, payload) {
-    const userId = currentUserId()
-    if (!userId) throw new Error('invalidRequest')
-    const result = await updateRequest(userId, applicationId, payload)
+    if (!currentUserId()) throw new Error('invalidRequest')
+    const result = await updateRequest(applicationId, payload)
     application.value = result
     return result
   }
 
   async function resubmit(applicationId, payload) {
-    const userId = currentUserId()
-    if (!userId) throw new Error('invalidRequest')
-    const result = await resubmitRequest(userId, applicationId, payload)
+    if (!currentUserId()) throw new Error('invalidRequest')
+    const result = await resubmitRequest(applicationId, payload)
     application.value = result
     return result
   }
 
   async function updateProfile(payload) {
-    const userId = currentUserId()
-    if (!userId) throw new Error('invalidRequest')
-    const result = await updateProfileRequest(userId, payload)
+    if (!currentUserId()) throw new Error('invalidRequest')
+    const result = await updateProfileRequest(payload)
     application.value = result
     return result
   }
 
-  /** Clears in-memory state (e.g. on logout) — persisted data is untouched. */
+  /** Clears in-memory state (e.g. on logout). */
   function clear() {
     application.value = null
-    membership.value = null
     error.value = null
   }
 
   return {
     application,
-    membership,
     loading,
     error,
     fetchApplication,

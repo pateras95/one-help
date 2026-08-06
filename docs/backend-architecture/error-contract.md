@@ -97,6 +97,34 @@ actually failed internally.
 | `invalidTransition` | `organization.invalidTransition` | 400 |
 | `notFound` | `organization.notFound` | 404 |
 
+#### Implementation note (Organizations & Organizer Applications phase)
+
+- **`organization.invalidOrganizationType`/`.invalidEmail`/`.invalidWebsite`/
+  `.invalidCategories` were not implemented as distinct codes.** Field-format checks
+  (`@Email`, the website pattern, non-empty categories) are plain Bean Validation
+  constraints and surface as the existing generic `validation.failed` (422) with a
+  `fieldErrors` map, exactly like every other DTO in this API — introducing
+  organization-specific duplicates of that mechanism would only fragment the one
+  validation-error contract the frontend already handles uniformly. An invalid
+  `organizationType`/`category` **enum literal** (not just a missing/malformed value)
+  is caught earlier, at JSON deserialization, by a new
+  `GlobalExceptionHandler` handler for `HttpMessageNotReadableException` — also mapped
+  to `validation.failed` (422), since Jackson's parse failure happens before Bean
+  Validation's field-level `FieldError` mechanism runs and has no comparable per-field
+  attribution available.
+- **`organization.suspended`** (the mock's "submission blocked because a prior
+  organization is suspended" scenario) is structurally unreachable in the real backend
+  and was not implemented: a `SUSPENDED` organization always implies its owner's role
+  is already `ORGANIZER` (ADR-4/ADR-8's tight role/organization coupling), and the
+  submit endpoint is `VOLUNTEER`-only at the method-security layer — such a caller
+  already receives `common.forbidden` (403) before any organization-specific check
+  runs. Retained in this table only as a record of the mock behavior it replaces.
+- **`organizer.organizationMissing`** (404), **`organizer.notOrganizer`** (403), and
+  **`organizer.demotionNotAllowed`** (400) were added — new codes for the
+  administrator-demotion endpoint's defensive checks, which have no equivalent in the
+  original mock (the mock's demotion function had no separate admin-vs-self code
+  path). Full detail in `docs/backend-discovery/api-organizations.md`.
+
 ### Actions / organizer actions (`organizer.errors.*`)
 
 | Frontend code | Backend code | HTTP |

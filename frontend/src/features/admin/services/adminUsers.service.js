@@ -1,120 +1,116 @@
-import { mockResponse } from '@/utils/mockResponse'
-import { getAllUsers, getUserById } from '@/features/auth/services/auth.service'
-import { setUserProfileOverride } from '@/features/auth/mocks/userProfileOverride.storage'
-import { setUserStatus } from '../mocks/userStatus.storage'
-import { logActivity } from '../mocks/activityLog.storage'
-import { ACCOUNT_STATUS } from '../utils/accountStatus'
-import { ACTIVITY_ACTION_TYPE, ACTIVITY_TARGET_TYPE } from '../utils/activityLogTypes'
+import { httpClient, extractApiError } from '@/services/http'
+import { normalizeApiUser } from '@/services/normalizeApiUser'
 import { ADMIN_ERROR } from '../utils/adminErrors'
 
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+/**
+ * Real backend calls (`GET/PATCH /api/v1/admin/users`, `.../suspend`,
+ * `.../reactivate` — docs/backend-discovery/api-users-and-roles.md). Unlike the mock
+ * this replaces, `suspendUser`/`reactivateUser`/`updateUserProfile` no longer take an
+ * `adminUserId` parameter — the backend derives the acting administrator from the
+ * bearer token itself (`CurrentUserProvider`), the same way every other real endpoint
+ * in this app already does; passing it explicitly would be dead, ignored input.
+ */
 
 /**
- * All user accounts, newest first — the admin user-management list.
- * Never includes passwords (relies on `auth.service.js`'s own sanitizing).
- *
- * @returns {Promise<Array<Object>>}
+ * Maps a backend `ApiErrorResponse.code` to this feature's own pre-existing,
+ * unprefixed error vocabulary (`ADMIN_ERROR`) so every existing
+ * `t(adminErrorKey(err.message))` call site keeps working unchanged. Unlike auth's
+ * simple `auth.` prefix strip, these codes come from two different backend domains
+ * (`users.*`, `admin.*`) with names that don't always match the mock's own vocabulary
+ * 1:1, so this is an explicit table rather than a mechanical strip.
  */
-export async function getUsers() {
-  const users = await getAllUsers()
-  return mockResponse([...users].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt)))
+const CODE_MAP = {
+  'users.notFound': ADMIN_ERROR.NOT_FOUND,
+  'users.selfSuspensionNotAllowed': ADMIN_ERROR.CANNOT_SUSPEND_SELF,
+  'admin.duplicateEmail': ADMIN_ERROR.DUPLICATE_EMAIL
+}
+
+function toDomainError(axiosError) {
+  const apiError = extractApiError(axiosError)
+  const error = new Error(CODE_MAP[apiError.code] ?? apiError.code)
+  error.code = apiError.code
+  error.fieldErrors = apiError.fieldErrors
+  error.status = apiError.status
+  return error
 }
 
 /**
- * @param {string} adminUserId - The admin performing the action (for the self-suspend guard and activity log).
- * @param {string} targetUserId
+ * @param {Object} [filters]
+ * @param {number} [filters.page=0]
+ * @param {number} [filters.size=20]
+ * @param {string} [filters.search] - matches first name, last name, or email
+ * @param {string} [filters.role] - one of `ROLES` (lowercase — uppercased for the API call)
+ * @param {string} [filters.status] - one of `ACCOUNT_STATUS` (lowercase — uppercased for the API call)
+ * @returns {Promise<{content: Array<Object>, page: number, size: number, totalElements: number, totalPages: number}>}
+ */
+export async function getUsers({ page = 0, size = 20, search = '', role = '', status = '' } = {}) {
+  try {
+    const params = new URLSearchParams({ page: String(page), size: String(size) })
+    if (search) params.set('search', search)
+    if (role) params.set('role', role.toUpperCase())
+    if (status) params.set('status', status.toUpperCase())
+
+    const { data } = await httpClient.get(`/admin/users?${params.toString()}`)
+    return { ...data, content: data.content.map(normalizeApiUser) }
+  } catch (err) {
+    throw toDomainError(err)
+  }
+}
+
+/**
+ * @param {string} userId
  * @returns {Promise<Object>}
  */
-export async function suspendUser(adminUserId, targetUserId) {
-  if (!adminUserId || !targetUserId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function getUserDetails(userId) {
+  try {
+    const { data } = await httpClient.get(`/admin/users/${userId}`)
+    return normalizeApiUser(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-  if (adminUserId === targetUserId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.CANNOT_SUSPEND_SELF })
-  }
-
-  const target = await getUserById(targetUserId)
-  if (!target) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  setUserStatus(targetUserId, ACCOUNT_STATUS.SUSPENDED, adminUserId)
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.USER_SUSPENDED,
-    targetType: ACTIVITY_TARGET_TYPE.USER,
-    targetId: targetUserId,
-    metadata: { email: target.email }
-  })
-
-  const updated = await getUserById(targetUserId)
-  return mockResponse(updated)
 }
 
 /**
- * Edits a user's safe profile fields — first/last name and email only.
- * Role is never editable here: a volunteer only ever becomes an
- * organizer through an approved application, and an organizer only
- * ever reverts to a volunteer through `demoteOrganizerToVolunteer`.
+ * Edits a user's safe profile fields — first/last name and email (role is never
+ * editable here: a volunteer only ever becomes an organizer through an approved
+ * application — not built yet — and an organizer only ever reverts to a volunteer
+ * through the future dedicated demotion cascade, also not built yet).
  *
- * @param {string} adminUserId
  * @param {string} targetUserId
  * @param {{firstName: string, lastName: string, email: string}} payload
  * @returns {Promise<Object>}
  */
-export async function updateUserProfile(adminUserId, targetUserId, payload) {
-  if (!adminUserId || !targetUserId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function updateUserProfile(targetUserId, payload) {
+  try {
+    const { data } = await httpClient.patch(`/admin/users/${targetUserId}`, payload)
+    return normalizeApiUser(data)
+  } catch (err) {
+    throw toDomainError(err)
   }
-
-  const target = await getUserById(targetUserId)
-  if (!target) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
-  }
-
-  const firstName = payload.firstName?.trim() ?? ''
-  const lastName = payload.lastName?.trim() ?? ''
-  const email = payload.email?.trim().toLowerCase() ?? ''
-  if (!firstName || !lastName || !email || !EMAIL_PATTERN.test(email)) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
-  }
-
-  const allUsers = await getAllUsers()
-  const emailTaken = allUsers.some((user) => user.id !== targetUserId && user.email.toLowerCase() === email)
-  if (emailTaken) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.DUPLICATE_EMAIL })
-  }
-
-  setUserProfileOverride(targetUserId, { firstName, lastName, email }, adminUserId)
-
-  const updated = await getUserById(targetUserId)
-  return mockResponse(updated)
 }
 
 /**
- * @param {string} adminUserId
  * @param {string} targetUserId
- * @returns {Promise<Object>}
+ * @returns {Promise<Object>} `{id, status, updatedAt}`
  */
-export async function reactivateUser(adminUserId, targetUserId) {
-  if (!adminUserId || !targetUserId) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.INVALID_REQUEST })
+export async function suspendUser(targetUserId) {
+  try {
+    const { data } = await httpClient.post(`/admin/users/${targetUserId}/suspend`)
+    return { ...data, status: data.status?.toLowerCase() }
+  } catch (err) {
+    throw toDomainError(err)
   }
+}
 
-  const target = await getUserById(targetUserId)
-  if (!target) {
-    return mockResponse(null, { shouldFail: true, errorMessage: ADMIN_ERROR.NOT_FOUND })
+/**
+ * @param {string} targetUserId
+ * @returns {Promise<Object>} `{id, status, updatedAt}`
+ */
+export async function reactivateUser(targetUserId) {
+  try {
+    const { data } = await httpClient.post(`/admin/users/${targetUserId}/reactivate`)
+    return { ...data, status: data.status?.toLowerCase() }
+  } catch (err) {
+    throw toDomainError(err)
   }
-
-  setUserStatus(targetUserId, ACCOUNT_STATUS.ACTIVE, adminUserId)
-  logActivity({
-    adminUserId,
-    actionType: ACTIVITY_ACTION_TYPE.USER_REACTIVATED,
-    targetType: ACTIVITY_TARGET_TYPE.USER,
-    targetId: targetUserId,
-    metadata: { email: target.email }
-  })
-
-  const updated = await getUserById(targetUserId)
-  return mockResponse(updated)
 }
